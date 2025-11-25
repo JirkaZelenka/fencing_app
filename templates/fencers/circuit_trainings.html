@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Kruháče - Šermířská aplikace{% endblock %}
+{% block title %}Masíčko - Šermířská aplikace{% endblock %}
 
 {% block content %}
-<h1>Kruháče</h1>
+<h1>Masíčko</h1>
 
 <div class="row mt-4">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Nový kruháč</h5>
+                <h5 class="card-title">Nové masíčko</h5>
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
@@ -24,6 +24,12 @@
                         <label for="{{ form.exercises.id_for_label }}" class="form-label">Cvičení (každé na nový řádek)</label>
                         {{ form.exercises }}
                     </div>
+                    <div class="mb-3 form-check">
+                        {{ form.is_public }}
+                        <label for="{{ form.is_public.id_for_label }}" class="form-check-label">
+                            Zveřejnit
+                        </label>
+                    </div>
                     <button type="submit" class="btn btn-primary">Vytvořit</button>
                 </form>
             </div>
@@ -32,9 +38,16 @@
     
     <div class="col-md-8">
         {% for circuit in circuits %}
-        <div class="card mb-3">
+        <div class="card mb-3 {% if circuit.created_by == user %}border-primary{% else %}border-info{% endif %}">
             <div class="card-body">
-                <h5 class="card-title">{{ circuit.name }}</h5>
+                <h5 class="card-title">
+                    {{ circuit.name }}
+                    {% if circuit.created_by == user %}
+                        <span class="badge bg-primary ms-2">Moje</span>
+                    {% else %}
+                        <span class="badge bg-info text-dark ms-2">Veřejné</span>
+                    {% endif %}
+                </h5>
                 {% if circuit.description %}
                     <p class="card-text">{{ circuit.description }}</p>
                 {% endif %}
@@ -62,7 +75,7 @@
         {% empty %}
         <div class="card">
             <div class="card-body">
-                <p class="text-muted">Zatím žádné kruháče</p>
+                <p class="text-muted">Zatím žádná masíčka</p>
             </div>
         </div>
         {% endfor %}

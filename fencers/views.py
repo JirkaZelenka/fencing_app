@@ -129,7 +129,10 @@ def training_notes(request):
 @login_required
 def circuit_trainings(request):
     user = request.user
-    circuits = CircuitTraining.objects.all().prefetch_related('songs').order_by('-created_at')
+    # Get user's own circuits and public circuits from others
+    circuits = CircuitTraining.objects.filter(
+        Q(created_by=user) | Q(is_public=True)
+    ).prefetch_related('songs').order_by('-created_at')
     
     if request.method == 'POST':
         form = CircuitTrainingForm(request.POST)
@@ -137,7 +140,7 @@ def circuit_trainings(request):
             circuit = form.save(commit=False)
             circuit.created_by = user
             circuit.save()
-            messages.success(request, 'Kruháč byl vytvořen.')
+            messages.success(request, 'Masíčko bylo vytvořeno.')
             return redirect('circuit_trainings')
     else:
         form = CircuitTrainingForm()
@@ -145,6 +148,7 @@ def circuit_trainings(request):
     context = {
         'circuits': circuits,
         'form': form,
+        'user': user,
     }
     return render(request, 'fencers/circuit_trainings.html', context)
 

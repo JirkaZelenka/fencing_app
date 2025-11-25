@@ -13,9 +13,16 @@ class TrainingNoteForm(forms.ModelForm):
 
 
 class CircuitTrainingForm(forms.ModelForm):
+    is_public = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Zveřejnit",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
     class Meta:
         model = CircuitTraining
-        fields = ['name', 'description', 'exercises']
+        fields = ['name', 'description', 'exercises', 'is_public']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

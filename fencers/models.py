@@ -77,22 +77,23 @@ class CircuitTraining(models.Model):
     exercises = models.TextField(verbose_name="Cvičení (každé na nový řádek)")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circuit_trainings', verbose_name="Vytvořil")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_public = models.BooleanField(default=False, verbose_name="Veřejné")
     
     class Meta:
-        verbose_name = "Kruháč"
-        verbose_name_plural = "Kruháče"
+        verbose_name = "Masíčko"
+        verbose_name_plural = "Masíčka"
         ordering = ['-created_at']
 
 
 class CircuitSong(models.Model):
-    circuit = models.ForeignKey(CircuitTraining, on_delete=models.CASCADE, related_name='songs', verbose_name="Kruháč")
+    circuit = models.ForeignKey(CircuitTraining, on_delete=models.CASCADE, related_name='songs', verbose_name="Masíčko")
     name = models.CharField(max_length=200, verbose_name="Název skladby")
     audio_file = models.FileField(upload_to='circuit_songs/', verbose_name="Audio soubor")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = "Skladba pro kruháč"
-        verbose_name_plural = "Skladby pro kruháče"
+        verbose_name = "Skladba pro masíčko"
+        verbose_name_plural = "Skladby pro masíčka"
 
 
 class EventPhoto(models.Model):

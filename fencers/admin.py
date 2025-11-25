@@ -80,8 +80,8 @@ class TrainingNoteAdmin(admin.ModelAdmin):
 
 @admin.register(CircuitTraining)
 class CircuitTrainingAdmin(admin.ModelAdmin):
-    list_display = ['name', 'created_by', 'created_at']
-    list_filter = ['created_at']
+    list_display = ['name', 'created_by', 'is_public', 'created_at']
+    list_filter = ['is_public', 'created_at']
     search_fields = ['name', 'description']
 
 

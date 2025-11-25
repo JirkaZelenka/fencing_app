@@ -14,6 +14,84 @@ from .models import (
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm
 
 
+# Slots shown around the figurine in the equipment view.
+# Keywords are used to automatically map the slot to a concrete EquipmentItem.
+EQUIPMENT_LOADOUT_SLOTS = [
+    {
+        "id": "mask",
+        "label": "Maska",
+        "icon_class": "bi-shield-check",
+        "keywords": ["mask"],
+        "position": "top",
+        "fallback_description": "Epee maska s 1600N ochranou a průhledným bibem.",
+    },
+    {
+        "id": "jacket",
+        "label": "Bunda",
+        "icon_class": "bi-person-bounding-box",
+        "keywords": ["bunda", "jacket"],
+        "position": "left",
+        "fallback_description": "Standardní 800N bunda s průstřihy na kabeláž.",
+    },
+    {
+        "id": "plastron",
+        "label": "Plastron",
+        "icon_class": "bi-shield",
+        "keywords": ["plastron", "podvlékací", "ochrana paže"],
+        "position": "left",
+        "fallback_description": "Vnitřní ochrana paže a trupu, povinná na soutěžích.",
+    },
+    {
+        "id": "glove",
+        "label": "Rukavice",
+        "icon_class": "bi-hand-index-thumb",
+        "keywords": ["rukavice", "glove"],
+        "position": "right",
+        "fallback_description": "Rukavice s prodlouženou manžetou pro kord.",
+    },
+    {
+        "id": "breeches",
+        "label": "Kalhoty",
+        "icon_class": "bi-scissors",
+        "keywords": ["kalhot", "breeches"],
+        "position": "right",
+        "fallback_description": "Kalhoty pod kolena s vysokou odolností proti průrazu.",
+    },
+    {
+        "id": "socks_shoes",
+        "label": "Ponožky & boty",
+        "icon_class": "bi-lightning-charge",
+        "keywords": ["boty", "obuv", "socks", "ponož"],
+        "position": "bottom",
+        "fallback_description": "Speciální podrážka pro výpady a vysoké podkolenky.",
+    },
+    {
+        "id": "weapon",
+        "label": "Kord",
+        "icon_class": "bi-sword",
+        "keywords": ["kord", "epee", "zbraň"],
+        "position": "right",
+        "fallback_description": "Vyvážený závodní kord s elektrickým hrotem.",
+    },
+    {
+        "id": "body_cord",
+        "label": "Body cord",
+        "icon_class": "bi-usb-symbol",
+        "keywords": ["body", "kabel", "šňůr"],
+        "position": "left",
+        "fallback_description": "Třívodičový kabel spojující zbraň se scoring boxem.",
+    },
+    {
+        "id": "chest_guard",
+        "label": "Chránič hrudi",
+        "icon_class": "bi-heart",
+        "keywords": ["hrud", "chránič", "protect"],
+        "position": "top",
+        "fallback_description": "Povinný plastový chránič pro ženy, volitelný pro muže.",
+    },
+]
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -250,7 +328,7 @@ def guides_equipment_assembly(request):
 @login_required
 def equipment(request):
     user = request.user
-    equipment_items = EquipmentItem.objects.all().order_by('category', 'name')
+    equipment_items = list(EquipmentItem.objects.all().order_by('category', 'name'))
     
     # Get user's equipment status and attach to items
     user_equipment = {ue.equipment_id: ue for ue in UserEquipment.objects.filter(user=user)}
@@ -271,8 +349,43 @@ def equipment(request):
         
         return JsonResponse({'success': True})
     
+    # Build RPG-like loadout slots around the figurine.
+    def find_matching_item(slot):
+        keywords = [kw.casefold() for kw in slot.get('keywords', [])]
+        for item in equipment_items:
+            name_cf = item.name.casefold()
+            if any(keyword in name_cf for keyword in keywords):
+                return item
+        return None
+    
+    loadout_slots = []
+    for slot in EQUIPMENT_LOADOUT_SLOTS:
+        slot_data = slot.copy()
+        matched_item = find_matching_item(slot)
+        slot_data['equipment_id'] = matched_item.id if matched_item else None
+        slot_data['is_owned'] = (
+            bool(matched_item and matched_item.user_equipment and matched_item.user_equipment.is_owned)
+        )
+        slot_data['description'] = (
+            matched_item.description if matched_item and matched_item.description else slot.get('fallback_description', '')
+        )
+        slot_data['purchase_link'] = matched_item.purchase_link if matched_item else ''
+        slot_data['is_disabled'] = matched_item is None
+        loadout_slots.append(slot_data)
+    
+    positions = {'top': [], 'left': [], 'right': [], 'bottom': []}
+    for slot in loadout_slots:
+        pos = slot.get('position', 'left')
+        if pos not in positions:
+            positions[pos] = []
+        positions[pos].append(slot)
+    
     context = {
         'equipment_items': equipment_items,
+        'loadout_slots_top': positions.get('top', []),
+        'loadout_slots_left': positions.get('left', []),
+        'loadout_slots_right': positions.get('right', []),
+        'loadout_slots_bottom': positions.get('bottom', []),
     }
     return render(request, 'fencers/equipment.html', context)
 

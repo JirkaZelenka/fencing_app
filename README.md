@@ -39,4 +39,4 @@ TODO:
 - počítat i body, společná tabulka?
 - Statistiky - já vs klub - toggle button
 - Statistiky - ...
-- Kruháče přejmenovat na Masíčko, a udělat je soukromé/sdílené, a tedy vidět v listu i svoje i sdílené, odlišené
+- interní miniturnaje - ukazovat stejná data jko u turnajů

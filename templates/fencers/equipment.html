@@ -1,9 +1,54 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Vybavení - Šermířská aplikace{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
+
 {% block content %}
 <h1>Vybavení</h1>
+
+<div class="card equipment-loadout-card mt-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h5 class="mb-0">Loadout klasického kordisty</h5>
+            <small class="text-muted">Klikatelné sloty jako v RPG inventáři</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="equipment-loadout-layout">
+            <div class="loadout-row loadout-top">
+                {% for slot in loadout_slots_top %}
+                    {% include 'fencers/partials/loadout_tile.html' with slot=slot %}
+                {% endfor %}
+            </div>
+            <div class="loadout-row loadout-middle">
+                <div class="loadout-column loadout-left">
+                    {% for slot in loadout_slots_left %}
+                        {% include 'fencers/partials/loadout_tile.html' with slot=slot %}
+                    {% endfor %}
+                </div>
+                <div class="loadout-figure text-center">
+                    <img src="{% static 'img/epee_figure.svg' %}" alt="Šermíř s kordem" class="img-fluid">
+                    <p class="figure-hint text-muted small mt-2">Přetáhni kurzor na slot a klikni pro potvrzení výbavy.</p>
+                </div>
+                <div class="loadout-column loadout-right">
+                    {% for slot in loadout_slots_right %}
+                        {% include 'fencers/partials/loadout_tile.html' with slot=slot %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="loadout-row loadout-bottom">
+                {% for slot in loadout_slots_bottom %}
+                    {% include 'fencers/partials/loadout_tile.html' with slot=slot %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row mt-4">
     {% regroup equipment_items by category as equipment_by_category %}
@@ -76,34 +121,92 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('.equipment-checkbox');
     const csrftoken = getCookie('csrftoken');
+    const checkboxes = document.querySelectorAll('.equipment-checkbox');
+    const tiles = document.querySelectorAll('.loadout-tile');
+
+    function setTileState(tile, isOwned) {
+        if (!tile) return;
+        tile.dataset.owned = isOwned ? 'true' : 'false';
+        tile.classList.toggle('obtained', isOwned);
+        const statusEl = tile.querySelector('.loadout-status');
+        if (statusEl) {
+            statusEl.textContent = isOwned ? 'Získáno' : 'Chybí';
+        }
+        tile.setAttribute('aria-pressed', isOwned ? 'true' : 'false');
+    }
+
+    function setTilePending(tile, pending) {
+        if (!tile) return;
+        tile.classList.toggle('pending', pending);
+    }
+
+    function syncTileState(equipmentId, isOwned) {
+        tiles.forEach(tile => {
+            if (tile.dataset.equipmentId === equipmentId) {
+                setTileState(tile, isOwned);
+            }
+        });
+    }
+
+    function syncCheckboxState(equipmentId, isOwned) {
+        const checkbox = document.querySelector(`.equipment-checkbox[data-equipment-id="${equipmentId}"]`);
+        if (checkbox) {
+            checkbox.checked = isOwned;
+        }
+    }
+
+    function updateEquipmentStatus(equipmentId, isOwned, onError) {
+        return fetch('{% url "equipment" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken
+            },
+            body: `equipment_id=${equipmentId}&is_owned=${isOwned}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                syncTileState(equipmentId, isOwned);
+                syncCheckboxState(equipmentId, isOwned);
+            } else if (onError) {
+                onError();
+            }
+        })
+        .catch(error => {
+            console.error('Chyba:', error);
+            if (onError) {
+                onError();
+            }
+        });
+    }
     
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const equipmentId = this.dataset.equipmentId;
             const isOwned = this.checked;
-            const originalChecked = !isOwned;
             
-            fetch('{% url "equipment" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrftoken
-                },
-                body: `equipment_id=${equipmentId}&is_owned=${isOwned}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Status vybavení aktualizován');
-                } else {
-                    this.checked = originalChecked;
-                }
-            })
-            .catch(error => {
-                console.error('Chyba:', error);
-                this.checked = originalChecked;
+            updateEquipmentStatus(equipmentId, isOwned, () => {
+                this.checked = !isOwned;
+            });
+        });
+    });
+
+    tiles.forEach(tile => {
+        const equipmentId = tile.dataset.equipmentId;
+        if (!equipmentId) {
+            return;
+        }
+        tile.addEventListener('click', function() {
+            const currentState = this.dataset.owned === 'true';
+            const targetState = !currentState;
+            setTileState(this, targetState);
+            setTilePending(this, true);
+            updateEquipmentStatus(equipmentId, targetState, () => {
+                setTileState(this, currentState);
+            }).finally(() => {
+                setTilePending(this, false);
             });
         });
     });

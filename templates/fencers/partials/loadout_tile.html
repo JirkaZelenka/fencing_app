@@ -1,0 +1,17 @@
+<div class="loadout-tile-wrapper connector connector-{{ slot.position|default:'left' }}">
+    <button
+        type="button"
+        class="loadout-tile{% if slot.is_owned %} obtained{% endif %}{% if slot.is_disabled %} disabled{% endif %}"
+        data-equipment-id="{{ slot.equipment_id|default_if_none:'' }}"
+        data-owned="{{ slot.is_owned|yesno:'true,false' }}"
+        title="{{ slot.description|default:'' }}"
+        {% if slot.is_disabled %}disabled{% endif %}
+        aria-pressed="{{ slot.is_owned|yesno:'true,false' }}">
+        <span class="loadout-icon">
+            <i class="bi {{ slot.icon_class }}"></i>
+        </span>
+        <span class="loadout-label">{{ slot.label }}</span>
+        <span class="loadout-status">{% if slot.is_owned %}Získáno{% else %}Chybí{% endif %}</span>
+    </button>
+</div>
+

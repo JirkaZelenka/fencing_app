@@ -7,7 +7,7 @@ Základní setup:
 - Sqlite DB
 - administrace na zakládání a spravování účtů
 - účty pro 20 lidi
-- hlavní menu se záložkami
+- hlavní menu se záložkami - fixed on top
 - toggle na noční režim
 
 Funkce (jednotlivé stránky):

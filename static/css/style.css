@@ -16,6 +16,17 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.3s, color 0.3s;
+    padding-top: 4.5rem; /* Keep content visible below the fixed navbar */
+}
+
+.navbar.fixed-top {
+    z-index: 1030; /* Ensure navbar stays above dropdown menus */
+}
+
+@media (max-width: 991.98px) {
+    body {
+        padding-top: 3.75rem;
+    }
 }
 
 .card {
@@ -42,6 +53,38 @@ body {
 
 .table-striped > tbody > tr:nth-of-type(odd) > td {
     background-color: var(--card-bg);
+}
+
+body[data-theme="dark"] .table {
+    color: #f8f9fa;
+    border-color: rgba(255, 255, 255, 0.15);
+    --bs-table-bg: rgba(255, 255, 255, 0.08);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.14);
+    --bs-table-striped-color: #f8f9fa;
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.22);
+    --bs-table-hover-color: #ffffff;
+}
+
+body[data-theme="dark"] .table tbody tr > * {
+    color: #f8f9fa !important;
+}
+
+body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(even) > * {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-theme="dark"] .table-striped > tbody > tr:hover > * {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+body[data-theme="dark"] .table thead th {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.18);
+    border-bottom-color: rgba(255, 255, 255, 0.2);
 }
 
 .bg-light {

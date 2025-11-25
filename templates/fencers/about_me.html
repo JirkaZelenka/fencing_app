@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}O mně - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>O mně</h1>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Profil</h5>
+                <p><strong>Jméno:</strong> {{ user.get_full_name|default:user.username }}</p>
+                <p><strong>Uživatelské jméno:</strong> {{ user.username }}</p>
+                {% if profile %}
+                    <p><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
+                    {% if profile.phone %}
+                        <p><strong>Telefon:</strong> {{ profile.phone }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Základní statistika</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Celkem turnajů:</strong> {{ total_tournaments }}</p>
+                        <p><strong>Výhry:</strong> {{ total_wins }}</p>
+                        <p><strong>Prohry:</strong> {{ total_losses }}</p>
+                        <p><strong>Úspěšnost:</strong> {{ win_rate }}%</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Zasazené zásahy:</strong> {{ total_touches_scored }}</p>
+                        <p><strong>Obdržené zásahy:</strong> {{ total_touches_received }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Účast na turnajích</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Turnaj</th>
+                                <th>Datum</th>
+                                <th>Umístění</th>
+                                <th>Výhry</th>
+                                <th>Prohry</th>
+                                <th>Zasazené zásahy</th>
+                                <th>Obdržené zásahy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for participation in participations %}
+                            <tr>
+                                <td>{{ participation.tournament.name }}</td>
+                                <td>{{ participation.tournament.date }}</td>
+                                <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                <td>{{ participation.wins }}</td>
+                                <td>{{ participation.losses }}</td>
+                                <td>{{ participation.touches_scored }}</td>
+                                <td>{{ participation.touches_received }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">Zatím žádné účasti na turnajích</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

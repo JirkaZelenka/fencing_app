@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Fotky z akcí - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Fotky z akcí</h1>
+
+<div class="row mt-4">
+    {% for photo in photos %}
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <img src="{{ photo.photo.url }}" class="card-img-top" alt="{{ photo.title }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ photo.title }}</h5>
+                {% if photo.description %}
+                    <p class="card-text">{{ photo.description }}</p>
+                {% endif %}
+                {% if photo.event_date %}
+                    <small class="text-muted">Datum akce: {{ photo.event_date }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Zatím žádné fotky
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

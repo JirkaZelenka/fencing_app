@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Stav placení - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Stav placení příspěvků</h1>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card {% if not payment_status.is_paid %}border-warning{% else %}border-success{% endif %}">
+            <div class="card-body text-center">
+                {% if payment_status.is_paid %}
+                    <div class="alert alert-success">
+                        <h4>✅ Příspěvek je zaplacen!</h4>
+                        {% if payment_status.payment_date %}
+                            <p>Datum platby: {{ payment_status.payment_date }}</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <h4>⚠️ Příspěvek není zaplacen!</h4>
+                        {% if payment_status.amount %}
+                            <p>Částka: {{ payment_status.amount }} Kč</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                {% if payment_status.qr_code %}
+                <div class="mt-4">
+                    <h5>QR kód pro platbu</h5>
+                    <img src="{{ payment_status.qr_code.url }}" alt="QR kód" class="img-fluid" style="max-width: 300px;">
+                </div>
+                {% endif %}
+                
+                {% if payment_status.payment_info %}
+                <div class="mt-4">
+                    <h5>Informace k platbě</h5>
+                    <p>{{ payment_status.payment_info|linebreaks }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

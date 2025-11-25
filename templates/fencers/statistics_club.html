@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Klubové statistiky - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Klubové statistiky - {{ club.name }}</h1>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Členové klubu</h5>
+                <ul>
+                    {% for fencer_profile in club_fencers %}
+                    <li>{{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Účasti na turnajích</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Šermíř</th>
+                                <th>Turnaj</th>
+                                <th>Datum</th>
+                                <th>Umístění</th>
+                                <th>Výhry</th>
+                                <th>Prohry</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for participation in participations %}
+                            <tr>
+                                <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
+                                <td>{{ participation.tournament.name }}</td>
+                                <td>{{ participation.tournament.date }}</td>
+                                <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                <td>{{ participation.wins }}</td>
+                                <td>{{ participation.losses }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">Zatím žádné účasti</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Interní miniturnaje</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Název</th>
+                                <th>Datum</th>
+                                <th>Místo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tournament in internal_tournaments %}
+                            <tr>
+                                <td>{{ tournament.name }}</td>
+                                <td>{{ tournament.date }}</td>
+                                <td>{{ tournament.location|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">Zatím žádné interní turnaje</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

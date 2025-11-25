@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Vybavení - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Vybavení</h1>
+
+<div class="row mt-4">
+    {% regroup equipment_items by category as equipment_by_category %}
+    {% for category in equipment_by_category %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>{{ category.grouper }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for item in category.list %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            {% if item.image %}
+                                <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" style="height: 200px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-body">
+                                <h6 class="card-title">{{ item.name }}</h6>
+                                {% if item.description %}
+                                    <p class="card-text small">{{ item.description|truncatewords:20 }}</p>
+                                {% endif %}
+                                {% if item.approximate_price %}
+                                    <p class="card-text"><strong>Cena:</strong> {{ item.approximate_price }} Kč</p>
+                                {% endif %}
+                                {% if item.purchase_link %}
+                                    <a href="{{ item.purchase_link }}" target="_blank" class="btn btn-sm btn-primary">Koupit</a>
+                                {% endif %}
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input equipment-checkbox" type="checkbox" 
+                                           data-equipment-id="{{ item.id }}"
+                                           {% if item.user_equipment and item.user_equipment.is_owned %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        Vlastním
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Zatím žádné vybavení
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.equipment-checkbox');
+    const csrftoken = getCookie('csrftoken');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const equipmentId = this.dataset.equipmentId;
+            const isOwned = this.checked;
+            const originalChecked = !isOwned;
+            
+            fetch('{% url "equipment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `equipment_id=${equipmentId}&is_owned=${isOwned}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Status vybavení aktualizován');
+                } else {
+                    this.checked = originalChecked;
+                }
+            })
+            .catch(error => {
+                console.error('Chyba:', error);
+                this.checked = originalChecked;
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+

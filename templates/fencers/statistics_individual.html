@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Individuální statistiky - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Individuální statistiky</h1>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Turnaj</th>
+                        <th>Datum</th>
+                        <th>Místo</th>
+                        <th>Umístění</th>
+                        <th>Výhry</th>
+                        <th>Prohry</th>
+                        <th>Zasazené zásahy</th>
+                        <th>Obdržené zásahy</th>
+                        <th>Poměr zásahů</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for participation in participations %}
+                    <tr>
+                        <td>{{ participation.tournament.name }}</td>
+                        <td>{{ participation.tournament.date }}</td>
+                        <td>{{ participation.tournament.location|default:"-" }}</td>
+                        <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                        <td>{{ participation.wins }}</td>
+                        <td>{{ participation.losses }}</td>
+                        <td>{{ participation.touches_scored }}</td>
+                        <td>{{ participation.touches_received }}</td>
+                        <td>
+                            {% if participation.touches_received > 0 %}
+                                {{ participation.touches_scored|floatformat:0 }}:{{ participation.touches_received|floatformat:0 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center">Zatím žádné statistiky</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

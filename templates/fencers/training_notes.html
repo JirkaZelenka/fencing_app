@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Poznámky z tréninků - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Poznámky z tréninků</h1>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Nová poznámka</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.date.id_for_label }}" class="form-label">Datum</label>
+                        {{ form.date }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Poznámky</label>
+                        {{ form.notes }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Uložit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Moje poznámky</h5>
+                {% for note in notes %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">{{ note.date }}</h6>
+                        <p class="card-text">{{ note.notes|linebreaks }}</p>
+                        <small class="text-muted">Vytvořeno: {{ note.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">Zatím žádné poznámky</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Slovníček pojmů - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Slovníček pojmů</h1>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% for term in terms %}
+                <div class="mb-4">
+                    <h5>{{ term.term }}</h5>
+                    <p>{{ term.definition|linebreaks }}</p>
+                    <hr>
+                </div>
+                {% empty %}
+                <p class="text-muted">Zatím žádné pojmy</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

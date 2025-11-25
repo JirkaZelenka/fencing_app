@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load fencers_filters %}
+
+{% block title %}Návodová videa - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Návodová videa na YouTube</h1>
+
+<div class="row mt-4">
+    {% for video in videos %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ video.title }}</h5>
+                {% if video.category %}
+                    <span class="badge bg-secondary">{{ video.category }}</span>
+                {% endif %}
+                {% if video.description %}
+                    <p class="card-text mt-2">{{ video.description }}</p>
+                {% endif %}
+                <div class="ratio ratio-16x9 mt-3">
+                    <iframe src="{{ video.youtube_url|youtube_embed }}" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Zatím žádná videa
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% endblock %}
+

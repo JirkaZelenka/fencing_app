@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Pravidla - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<h1>Pravidla výcuc</h1>
+
+<div class="row mt-4">
+    {% for rule in rules %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ rule.title }}</h5>
+                <div class="card-text">
+                    {{ rule.content|linebreaks }}
+                </div>
+                {% if rule.file %}
+                    <a href="{{ rule.file.url }}" class="btn btn-primary mt-2" download>Stáhnout soubor</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Zatím žádná pravidla
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

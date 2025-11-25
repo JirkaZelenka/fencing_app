@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
@@ -16,78 +17,83 @@ from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm
 
 # Slots shown around the figurine in the equipment view.
 # Keywords are used to automatically map the slot to a concrete EquipmentItem.
+
+#? "icon_class": "bi-mask", -> was working for previous bootstrap library with BI prefix
+#? now it is "icon": "icon" with Tabler prefix = "ti" skipped
+#? "https://tabler.io/icons/icon/shoe"
+
 EQUIPMENT_LOADOUT_SLOTS = [
     {
         "id": "mask",
         "label": "Maska",
-        "icon_class": "bi-shield-check",
-        "keywords": ["mask"],
+        "icon": "helmet",
+        "keywords": ["mask", "maska"],
         "position": "top",
-        "fallback_description": "Epee maska s 1600N ochranou a průhledným bibem.",
+        "fallback_description": "Maska musí splňovat X-N a další ochranné parametry.",
     },
     {
         "id": "jacket",
-        "label": "Bunda",
-        "icon_class": "bi-person-bounding-box",
-        "keywords": ["bunda", "jacket"],
+        "label": "Vesta",
+        "icon": "jacket",
+        "keywords": ["vesta", "jacket"],
         "position": "left",
-        "fallback_description": "Standardní 800N bunda s průstřihy na kabeláž.",
+        "fallback_description": "Standardní X-N vesta pro kordisty.",
     },
     {
         "id": "plastron",
-        "label": "Plastron",
-        "icon_class": "bi-shield",
-        "keywords": ["plastron", "podvlékací", "ochrana paže"],
+        "label": "Podvesta",
+        "icon": "shield-down",
+        "keywords": ["podvesta", "plastron"],
         "position": "left",
         "fallback_description": "Vnitřní ochrana paže a trupu, povinná na soutěžích.",
     },
     {
+        "id": "breeches",
+        "label": "Kalhoty",
+        "icon": "hanger-2",
+        "keywords": ["kalhoty", "breeches"],
+        "position": "left",
+        "fallback_description": "Kalhoty pod kolena s vysokou odolností proti průrazu, standard X-N.",
+    },
+    {
         "id": "glove",
         "label": "Rukavice",
-        "icon_class": "bi-hand-index-thumb",
+        "icon": "hand-three-fingers",
         "keywords": ["rukavice", "glove"],
         "position": "right",
         "fallback_description": "Rukavice s prodlouženou manžetou pro kord.",
     },
     {
-        "id": "breeches",
-        "label": "Kalhoty",
-        "icon_class": "bi-scissors",
-        "keywords": ["kalhot", "breeches"],
-        "position": "right",
-        "fallback_description": "Kalhoty pod kolena s vysokou odolností proti průrazu.",
-    },
-    {
         "id": "socks_shoes",
         "label": "Ponožky & boty",
-        "icon_class": "bi-lightning-charge",
-        "keywords": ["boty", "obuv", "socks", "ponož"],
+        "icon": "shoe",
+        "keywords": ["boty", "obuv", "socks", "ponožky", "shoes"],
         "position": "bottom",
-        "fallback_description": "Speciální podrážka pro výpady a vysoké podkolenky.",
+        "fallback_description": "Vysoké podkolenky a šermířské boty s boční výztuží pro výpady.",
     },
     {
         "id": "weapon",
         "label": "Kord",
-        "icon_class": "bi-sword",
-        "keywords": ["kord", "epee", "zbraň"],
+        "icon": "sword",
+        "keywords": ["kord", "epee", "zbraň", "weapon"],
         "position": "right",
         "fallback_description": "Vyvážený závodní kord s elektrickým hrotem.",
     },
     {
         "id": "body_cord",
-        "label": "Body cord",
-        "icon_class": "bi-usb-symbol",
-        "keywords": ["body", "kabel", "šňůr"],
-        "position": "left",
-        "fallback_description": "Třívodičový kabel spojující zbraň se scoring boxem.",
+        "label": "Šňůra",
+        "icon": "plug-connected",
+        "keywords": ["cord", "kabel", "šňůra"],
+        "position": "right",
+        "fallback_description": "Třívodičový kabel spojující zbraň s aparátem.",
     },
     {
         "id": "chest_guard",
         "label": "Chránič hrudi",
-        "icon_class": "bi-heart",
-        "keywords": ["hrud", "chránič", "protect"],
+        "icon": "shield-chevron",
+        "keywords": ["hruď", "chránič", "prsa", "chest", "guard"],
         "position": "top",
-        "fallback_description": "Povinný plastový chránič pro ženy, volitelný pro muže.",
+        "fallback_description": "Plastový chránič hrudi, povinný pro ženy, volitelný pro muže.",
     },
 ]
 
@@ -354,8 +360,20 @@ def equipment(request):
         keywords = [kw.casefold() for kw in slot.get('keywords', [])]
         for item in equipment_items:
             name_cf = item.name.casefold()
-            if any(keyword in name_cf for keyword in keywords):
+            # Try exact match first
+            if name_cf in keywords:
                 return item
+            # Then try matching - allow keyword at start of name or as whole word
+            # This handles "mask" -> "Maska" but prevents "vesta" -> "Podvesta"
+            for keyword in keywords:
+                # Match if keyword is at the start of the name (e.g., "mask" matches "Maska")
+                if name_cf.startswith(keyword):
+                    return item
+                # Or match if keyword is a whole word (word boundaries)
+                # This ensures "vesta" matches "Vesta" but not "Podvesta"
+                pattern = r'\b' + re.escape(keyword) + r'\b'
+                if re.search(pattern, name_cf):
+                    return item
         return None
     
     loadout_slots = []

@@ -22,14 +22,8 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'about_me' %}">O mně</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="statisticsDropdown" role="button" data-bs-toggle="dropdown">
-                            Statistiky
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'statistics_individual' %}">Individuální</a></li>
-                            <li><a class="dropdown-item" href="{% url 'statistics_club' %}">Klub</a></li>
-                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'statistics_individual' %}">Statistiky</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="trainingDropdown" role="button" data-bs-toggle="dropdown">
@@ -48,17 +42,6 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'payment_status' %}">Stav placení</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="guidesDropdown" role="button" data-bs-toggle="dropdown">
-                            Návody
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'guides_glossary' %}">Slovníček pojmů</a></li>
-                            <li><a class="dropdown-item" href="{% url 'guides_videos' %}">Videa na YouTube</a></li>
-                            <li><a class="dropdown-item" href="{% url 'guides_rules' %}">Pravidla výcuc</a></li>
-                            <li><a class="dropdown-item" href="{% url 'guides_equipment_assembly' %}">Skladba kord</a></li>
-                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'equipment' %}">Vybavení</a>

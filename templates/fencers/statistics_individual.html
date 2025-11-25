@@ -1,55 +1,192 @@
 {% extends 'base.html' %}
 
-{% block title %}Individuální statistiky - Šermířská aplikace{% endblock %}
+{% block title %}Statistiky - Šermířská aplikace{% endblock %}
 
 {% block content %}
-<h1>Individuální statistiky</h1>
+<h1>Statistiky</h1>
 
-<div class="card mt-4">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Turnaj</th>
-                        <th>Datum</th>
-                        <th>Místo</th>
-                        <th>Umístění</th>
-                        <th>Výhry</th>
-                        <th>Prohry</th>
-                        <th>Zasazené zásahy</th>
-                        <th>Obdržené zásahy</th>
-                        <th>Poměr zásahů</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for participation in participations %}
-                    <tr>
-                        <td>{{ participation.tournament.name }}</td>
-                        <td>{{ participation.tournament.date }}</td>
-                        <td>{{ participation.tournament.location|default:"-" }}</td>
-                        <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
-                        <td>{{ participation.wins }}</td>
-                        <td>{{ participation.losses }}</td>
-                        <td>{{ participation.touches_scored }}</td>
-                        <td>{{ participation.touches_received }}</td>
-                        <td>
-                            {% if participation.touches_received > 0 %}
-                                {{ participation.touches_scored|floatformat:0 }}:{{ participation.touches_received|floatformat:0 }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center">Zatím žádné statistiky</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+{% if club %}
+<div class="mb-4">
+    <div class="btn-group" role="group" aria-label="Toggle statistics view">
+        <input type="radio" class="btn-check" name="statisticsToggle" id="individualToggle" autocomplete="off" checked>
+        <label class="btn btn-outline-primary" for="individualToggle">Moje statistiky</label>
+        
+        <input type="radio" class="btn-check" name="statisticsToggle" id="clubToggle" autocomplete="off">
+        <label class="btn btn-outline-primary" for="clubToggle">Klub</label>
+    </div>
+</div>
+{% endif %}
+
+<!-- Individual Statistics Section -->
+<div id="individualStats" class="statistics-section">
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Turnaj</th>
+                            <th>Datum</th>
+                            <th>Místo</th>
+                            <th>Umístění</th>
+                            <th>Výhry</th>
+                            <th>Prohry</th>
+                            <th>Zasazené zásahy</th>
+                            <th>Obdržené zásahy</th>
+                            <th>Poměr zásahů</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for participation in participations %}
+                        <tr>
+                            <td>{{ participation.tournament.name }}</td>
+                            <td>{{ participation.tournament.date }}</td>
+                            <td>{{ participation.tournament.location|default:"-" }}</td>
+                            <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                            <td>{{ participation.wins }}</td>
+                            <td>{{ participation.losses }}</td>
+                            <td>{{ participation.touches_scored }}</td>
+                            <td>{{ participation.touches_received }}</td>
+                            <td>
+                                {% if participation.touches_received > 0 %}
+                                    {{ participation.touches_scored|floatformat:0 }}:{{ participation.touches_received|floatformat:0 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center">Zatím žádné statistiky</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Club Statistics Section -->
+{% if club %}
+<div id="clubStats" class="statistics-section" style="display: none;">
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Členové klubu</h5>
+                    <ul>
+                        {% for fencer_profile in club_fencers %}
+                        <li>{{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Účasti na turnajích</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Šermíř</th>
+                                    <th>Turnaj</th>
+                                    <th>Datum</th>
+                                    <th>Umístění</th>
+                                    <th>Výhry</th>
+                                    <th>Prohry</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participation in club_participations %}
+                                <tr>
+                                    <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
+                                    <td>{{ participation.tournament.name }}</td>
+                                    <td>{{ participation.tournament.date }}</td>
+                                    <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                    <td>{{ participation.wins }}</td>
+                                    <td>{{ participation.losses }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Zatím žádné účasti</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Interní miniturnaje</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Název</th>
+                                    <th>Datum</th>
+                                    <th>Místo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tournament in internal_tournaments %}
+                                <tr>
+                                    <td>{{ tournament.name }}</td>
+                                    <td>{{ tournament.date }}</td>
+                                    <td>{{ tournament.location|default:"-" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Zatím žádné interní turnaje</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const individualToggle = document.getElementById('individualToggle');
+    const clubToggle = document.getElementById('clubToggle');
+    const individualStats = document.getElementById('individualStats');
+    const clubStats = document.getElementById('clubStats');
+    
+    if (individualToggle && clubToggle) {
+        individualToggle.addEventListener('change', function() {
+            if (this.checked) {
+                individualStats.style.display = 'block';
+                if (clubStats) clubStats.style.display = 'none';
+            }
+        });
+        
+        clubToggle.addEventListener('change', function() {
+            if (this.checked) {
+                if (clubStats) clubStats.style.display = 'block';
+                individualStats.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 

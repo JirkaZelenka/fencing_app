@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}Skladba kord - Šermířská aplikace{% endblock %}
+{% block title %}Technická část - Šermířská aplikace{% endblock %}
 
 {% block content %}
-<h1>Skladba kord</h1>
+<h1>Technická část</h1>
 
 <div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">3D model hrotu</h5>
                 <p class="text-muted">Zde bude 3D model hrotu (lze integrovat pomocí Three.js nebo podobné knihovny)</p>
@@ -18,11 +18,21 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Elektrické obvody</h5>
+                <p class="text-muted">Zde budou informace o elektrických obvodech kordů</p>
+                <!-- Content will be added via admin -->
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Návod na výlep</h5>
                 <p class="text-muted">Zde bude návod na výlep hrotu</p>
@@ -31,8 +41,8 @@
         </div>
     </div>
     
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title">Seznam nářadí</h5>
                 <ul>

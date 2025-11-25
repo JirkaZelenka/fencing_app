@@ -151,10 +151,30 @@ def about_me(request):
 @login_required
 def statistics_individual(request):
     user = request.user
-    participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')
+    
+    # Individual statistics
+    individual_participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')
+    
+    # Club statistics (if user has a club)
+    profile = getattr(user, 'fencer_profile', None)
+    club = None
+    club_fencers = None
+    club_participations = None
+    internal_tournaments = None
+    
+    if profile and profile.club:
+        club = profile.club
+        club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
+        fencer_ids = [fp.user.id for fp in club_fencers]
+        club_participations = TournamentParticipation.objects.filter(fencer_id__in=fencer_ids).select_related('fencer', 'tournament')
+        internal_tournaments = Tournament.objects.filter(is_internal=True).order_by('-date')
     
     context = {
-        'participations': participations,
+        'participations': individual_participations,
+        'club': club,
+        'club_fencers': club_fencers,
+        'club_participations': club_participations,
+        'internal_tournaments': internal_tournaments,
     }
     return render(request, 'fencers/statistics_individual.html', context)
 

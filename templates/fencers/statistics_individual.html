@@ -21,43 +21,77 @@
 <div id="individualStats" class="statistics-section">
     <div class="card mt-4">
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="filterTournament" class="form-label">Turnaj</label>
+                    <input type="text" class="form-control" id="filterTournament" placeholder="Hledat turnaj...">
+                </div>
+                <div class="col-md-3">
+                    <label for="filterDateFrom" class="form-label">Datum od</label>
+                    <input type="date" class="form-control" id="filterDateFrom">
+                </div>
+                <div class="col-md-3">
+                    <label for="filterDateTo" class="form-label">Datum do</label>
+                    <input type="date" class="form-control" id="filterDateTo">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-secondary w-100" id="clearFilters">Vymazat</button>
+                </div>
+            </div>
             <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="table table-striped" id="statisticsTable">
                     <thead>
                         <tr>
-                            <th>Turnaj</th>
-                            <th>Datum</th>
-                            <th>Místo</th>
-                            <th>Umístění</th>
-                            <th>Výhry</th>
-                            <th>Prohry</th>
-                            <th>Zasazené zásahy</th>
-                            <th>Obdržené zásahy</th>
-                            <th>Poměr zásahů</th>
+                            <th class="sortable" data-sort="tournament" style="cursor: pointer;">
+                                Turnaj <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="date" style="cursor: pointer;">
+                                Datum <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="location" style="cursor: pointer;">
+                                Místo <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="position" style="cursor: pointer;">
+                                Umístění <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="wins" style="cursor: pointer;">
+                                Výhry <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="losses" style="cursor: pointer;">
+                                Prohry <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="touches_scored" style="cursor: pointer;">
+                                Zasazené zásahy <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="touches_received" style="cursor: pointer;">
+                                Obdržené zásahy <span class="sort-indicator">↕</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for participation in participations %}
-                        <tr>
+                        <tr data-tournament="{{ participation.tournament.name|lower }}" 
+                            data-date="{{ participation.tournament.date|date:'Y-m-d' }}"
+                            data-location="{{ participation.tournament.location|default:''|lower }}"
+                            data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                            data-wins="{{ participation.wins }}"
+                            data-losses="{{ participation.losses }}"
+                            data-touches-scored="{{ participation.touches_scored }}"
+                            data-touches-received="{{ participation.touches_received }}">
                             <td>{{ participation.tournament.name }}</td>
                             <td>{{ participation.tournament.date }}</td>
                             <td>{{ participation.tournament.location|default:"-" }}</td>
-                            <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                            <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
+                                {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                            </td>
                             <td>{{ participation.wins }}</td>
                             <td>{{ participation.losses }}</td>
                             <td>{{ participation.touches_scored }}</td>
                             <td>{{ participation.touches_received }}</td>
-                            <td>
-                                {% if participation.touches_received > 0 %}
-                                    {{ participation.touches_scored|floatformat:0 }}:{{ participation.touches_received|floatformat:0 }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center">Zatím žádné statistiky</td>
+                            <td colspan="8" class="text-center">Zatím žádné statistiky</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -90,31 +124,86 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Účasti na turnajích</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="clubFilterFencer" class="form-label">Šermíř</label>
+                            <input type="text" class="form-control" id="clubFilterFencer" placeholder="Hledat šermíře...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="clubFilterTournament" class="form-label">Turnaj</label>
+                            <input type="text" class="form-control" id="clubFilterTournament" placeholder="Hledat turnaj...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="clubFilterDateFrom" class="form-label">Datum od</label>
+                            <input type="date" class="form-control" id="clubFilterDateFrom">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="clubFilterDateTo" class="form-label">Datum do</label>
+                            <input type="date" class="form-control" id="clubFilterDateTo">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-secondary w-100" id="clubClearFilters">Vymazat</button>
+                        </div>
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-striped" id="clubStatisticsTable">
                             <thead>
                                 <tr>
-                                    <th>Šermíř</th>
-                                    <th>Turnaj</th>
-                                    <th>Datum</th>
-                                    <th>Umístění</th>
-                                    <th>Výhry</th>
-                                    <th>Prohry</th>
+                                    <th class="sortable" data-sort="fencer" style="cursor: pointer;">
+                                        Šermíř <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="tournament" style="cursor: pointer;">
+                                        Turnaj <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="date" style="cursor: pointer;">
+                                        Datum <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="location" style="cursor: pointer;">
+                                        Místo <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="position" style="cursor: pointer;">
+                                        Umístění <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="wins" style="cursor: pointer;">
+                                        Výhry <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="losses" style="cursor: pointer;">
+                                        Prohry <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="touches_scored" style="cursor: pointer;">
+                                        Zasazené zásahy <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="touches_received" style="cursor: pointer;">
+                                        Obdržené zásahy <span class="sort-indicator">↕</span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for participation in club_participations %}
-                                <tr>
+                                <tr data-fencer="{{ participation.fencer.get_full_name|default:participation.fencer.username|lower }}"
+                                    data-tournament="{{ participation.tournament.name|lower }}" 
+                                    data-date="{{ participation.tournament.date|date:'Y-m-d' }}"
+                                    data-location="{{ participation.tournament.location|default:''|lower }}"
+                                    data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                    data-wins="{{ participation.wins }}"
+                                    data-losses="{{ participation.losses }}"
+                                    data-touches-scored="{{ participation.touches_scored }}"
+                                    data-touches-received="{{ participation.touches_received }}">
                                     <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
                                     <td>{{ participation.tournament.name }}</td>
                                     <td>{{ participation.tournament.date }}</td>
-                                    <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                    <td>{{ participation.tournament.location|default:"-" }}</td>
+                                    <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
+                                        {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                    </td>
                                     <td>{{ participation.wins }}</td>
                                     <td>{{ participation.losses }}</td>
+                                    <td>{{ participation.touches_scored }}</td>
+                                    <td>{{ participation.touches_received }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center">Zatím žádné účasti</td>
+                                    <td colspan="9" class="text-center">Zatím žádné účasti</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -184,6 +273,396 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (clubStats) clubStats.style.display = 'block';
                 individualStats.style.display = 'none';
             }
+        });
+    }
+    
+    // Filter functionality
+    const filterTournament = document.getElementById('filterTournament');
+    const filterDateFrom = document.getElementById('filterDateFrom');
+    const filterDateTo = document.getElementById('filterDateTo');
+    const clearFilters = document.getElementById('clearFilters');
+    const table = document.getElementById('statisticsTable');
+    
+    if (table) {
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        let currentSort = { column: null, direction: 'asc' };
+        
+        function applyFilters() {
+            const tournamentFilter = filterTournament ? filterTournament.value.toLowerCase().trim() : '';
+            const dateFrom = filterDateFrom ? filterDateFrom.value : '';
+            const dateTo = filterDateTo ? filterDateTo.value : '';
+            
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                // Check if this is the "no data" row
+                const hasColspan = row.querySelector('td[colspan]');
+                if (hasColspan) {
+                    // Hide "no data" row initially, will show if needed
+                    row.style.display = 'none';
+                    return;
+                }
+                
+                // Skip if row doesn't have data attributes (shouldn't happen, but safety check)
+                if (!row.hasAttribute('data-tournament')) {
+                    return;
+                }
+                
+                const tournament = row.getAttribute('data-tournament') || '';
+                const date = row.getAttribute('data-date') || '';
+                
+                let show = true;
+                
+                // Tournament filter
+                if (tournamentFilter && !tournament.includes(tournamentFilter)) {
+                    show = false;
+                }
+                
+                // Date from filter
+                if (dateFrom && date < dateFrom) {
+                    show = false;
+                }
+                
+                // Date to filter
+                if (dateTo && date > dateTo) {
+                    show = false;
+                }
+                
+                if (show) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show "no data" message only if no rows are visible and there are actual data rows
+            const noDataRow = table.querySelector('tbody tr td[colspan]');
+            if (noDataRow) {
+                const noDataTr = noDataRow.closest('tr');
+                const hasDataRows = rows.length > 1 || (rows.length === 1 && !rows[0].querySelector('td[colspan]'));
+                if (visibleCount === 0 && hasDataRows) {
+                    noDataTr.style.display = '';
+                } else {
+                    noDataTr.style.display = 'none';
+                }
+            }
+        }
+        
+        // Sorting functionality
+        function sortTable(column) {
+            const tbody = table.querySelector('tbody');
+            const dataRows = rows.filter(row => !row.querySelector('td[colspan]') && row.hasAttribute('data-tournament'));
+            
+            // Toggle sort direction if clicking the same column
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Sort rows
+            dataRows.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'tournament':
+                        aVal = a.getAttribute('data-tournament') || '';
+                        bVal = b.getAttribute('data-tournament') || '';
+                        break;
+                    case 'date':
+                        aVal = a.getAttribute('data-date') || '';
+                        bVal = b.getAttribute('data-date') || '';
+                        break;
+                    case 'location':
+                        aVal = a.getAttribute('data-location') || '';
+                        bVal = b.getAttribute('data-location') || '';
+                        break;
+                    case 'position':
+                        aVal = parseInt(a.getAttribute('data-position')) || 999;
+                        bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'wins':
+                        aVal = parseInt(a.getAttribute('data-wins')) || 0;
+                        bVal = parseInt(b.getAttribute('data-wins')) || 0;
+                        break;
+                    case 'losses':
+                        aVal = parseInt(a.getAttribute('data-losses')) || 0;
+                        bVal = parseInt(b.getAttribute('data-losses')) || 0;
+                        break;
+                    case 'touches_scored':
+                        aVal = parseInt(a.getAttribute('data-touches-scored')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-scored')) || 0;
+                        break;
+                    case 'touches_received':
+                        aVal = parseInt(a.getAttribute('data-touches-received')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-received')) || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                // Compare values
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' 
+                        ? aVal.localeCompare(bVal)
+                        : bVal.localeCompare(aVal);
+                } else {
+                    return currentSort.direction === 'asc' 
+                        ? aVal - bVal
+                        : bVal - aVal;
+                }
+            });
+            
+            // Reorder rows in DOM
+            const noDataRow = rows.find(row => row.querySelector('td[colspan]'));
+            dataRows.forEach(row => tbody.appendChild(row));
+            if (noDataRow) {
+                tbody.appendChild(noDataRow);
+            }
+            
+            // Update sort indicators
+            updateSortIndicators();
+        }
+        
+        function updateSortIndicators() {
+            const headers = table.querySelectorAll('th.sortable');
+            headers.forEach(header => {
+                const indicator = header.querySelector('.sort-indicator');
+                const sortColumn = header.getAttribute('data-sort');
+                
+                if (sortColumn === currentSort.column) {
+                    indicator.textContent = currentSort.direction === 'asc' ? ' ↑' : ' ↓';
+                } else {
+                    indicator.textContent = ' ↕';
+                }
+            });
+        }
+        
+        // Add event listeners for filters
+        if (filterTournament) filterTournament.addEventListener('input', applyFilters);
+        if (filterDateFrom) filterDateFrom.addEventListener('change', applyFilters);
+        if (filterDateTo) filterDateTo.addEventListener('change', applyFilters);
+        
+        if (clearFilters) {
+            clearFilters.addEventListener('click', function() {
+                if (filterTournament) filterTournament.value = '';
+                if (filterDateFrom) filterDateFrom.value = '';
+                if (filterDateTo) filterDateTo.value = '';
+                applyFilters();
+            });
+        }
+        
+        // Add event listeners for sorting
+        const sortableHeaders = table.querySelectorAll('th.sortable');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const sortColumn = this.getAttribute('data-sort');
+                sortTable(sortColumn);
+            });
+        });
+    }
+    
+    // Club table sorting functionality
+    const clubTable = document.getElementById('clubStatisticsTable');
+    if (clubTable) {
+        const clubRows = Array.from(clubTable.querySelectorAll('tbody tr'));
+        let clubCurrentSort = { column: null, direction: 'asc' };
+        
+        function sortClubTable(column) {
+            const tbody = clubTable.querySelector('tbody');
+            const dataRows = clubRows.filter(row => !row.querySelector('td[colspan]') && (row.hasAttribute('data-tournament') || row.hasAttribute('data-fencer')));
+            
+            // Toggle sort direction if clicking the same column
+            if (clubCurrentSort.column === column) {
+                clubCurrentSort.direction = clubCurrentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                clubCurrentSort.column = column;
+                clubCurrentSort.direction = 'asc';
+            }
+            
+            // Sort rows
+            dataRows.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'fencer':
+                        aVal = a.getAttribute('data-fencer') || '';
+                        bVal = b.getAttribute('data-fencer') || '';
+                        break;
+                    case 'tournament':
+                        aVal = a.getAttribute('data-tournament') || '';
+                        bVal = b.getAttribute('data-tournament') || '';
+                        break;
+                    case 'date':
+                        aVal = a.getAttribute('data-date') || '';
+                        bVal = b.getAttribute('data-date') || '';
+                        break;
+                    case 'location':
+                        aVal = a.getAttribute('data-location') || '';
+                        bVal = b.getAttribute('data-location') || '';
+                        break;
+                    case 'position':
+                        aVal = parseInt(a.getAttribute('data-position')) || 999;
+                        bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'wins':
+                        aVal = parseInt(a.getAttribute('data-wins')) || 0;
+                        bVal = parseInt(b.getAttribute('data-wins')) || 0;
+                        break;
+                    case 'losses':
+                        aVal = parseInt(a.getAttribute('data-losses')) || 0;
+                        bVal = parseInt(b.getAttribute('data-losses')) || 0;
+                        break;
+                    case 'touches_scored':
+                        aVal = parseInt(a.getAttribute('data-touches-scored')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-scored')) || 0;
+                        break;
+                    case 'touches_received':
+                        aVal = parseInt(a.getAttribute('data-touches-received')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-received')) || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                // Compare values
+                if (typeof aVal === 'string') {
+                    return clubCurrentSort.direction === 'asc' 
+                        ? aVal.localeCompare(bVal)
+                        : bVal.localeCompare(aVal);
+                } else {
+                    return clubCurrentSort.direction === 'asc' 
+                        ? aVal - bVal
+                        : bVal - aVal;
+                }
+            });
+            
+            // Reorder rows in DOM
+            const noDataRow = clubRows.find(row => row.querySelector('td[colspan]'));
+            dataRows.forEach(row => tbody.appendChild(row));
+            if (noDataRow) {
+                tbody.appendChild(noDataRow);
+            }
+            
+            // Update sort indicators
+            updateClubSortIndicators();
+        }
+        
+        function updateClubSortIndicators() {
+            const headers = clubTable.querySelectorAll('th.sortable');
+            headers.forEach(header => {
+                const indicator = header.querySelector('.sort-indicator');
+                const sortColumn = header.getAttribute('data-sort');
+                
+                if (sortColumn === clubCurrentSort.column) {
+                    indicator.textContent = clubCurrentSort.direction === 'asc' ? ' ↑' : ' ↓';
+                } else {
+                    indicator.textContent = ' ↕';
+                }
+            });
+        }
+        
+        // Club table filtering functionality
+        const clubFilterFencer = document.getElementById('clubFilterFencer');
+        const clubFilterTournament = document.getElementById('clubFilterTournament');
+        const clubFilterDateFrom = document.getElementById('clubFilterDateFrom');
+        const clubFilterDateTo = document.getElementById('clubFilterDateTo');
+        const clubClearFilters = document.getElementById('clubClearFilters');
+        
+        function applyClubFilters() {
+            const fencerFilter = clubFilterFencer ? clubFilterFencer.value.toLowerCase().trim() : '';
+            const tournamentFilter = clubFilterTournament ? clubFilterTournament.value.toLowerCase().trim() : '';
+            const dateFrom = clubFilterDateFrom ? clubFilterDateFrom.value : '';
+            const dateTo = clubFilterDateTo ? clubFilterDateTo.value : '';
+            
+            let visibleCount = 0;
+            
+            clubRows.forEach(row => {
+                // Check if this is the "no data" row
+                const hasColspan = row.querySelector('td[colspan]');
+                if (hasColspan) {
+                    // Hide "no data" row initially, will show if needed
+                    row.style.display = 'none';
+                    return;
+                }
+                
+                // Skip if row doesn't have data attributes
+                if (!row.hasAttribute('data-tournament') && !row.hasAttribute('data-fencer')) {
+                    return;
+                }
+                
+                const fencer = row.getAttribute('data-fencer') || '';
+                const tournament = row.getAttribute('data-tournament') || '';
+                const date = row.getAttribute('data-date') || '';
+                
+                let show = true;
+                
+                // Fencer filter
+                if (fencerFilter && !fencer.includes(fencerFilter)) {
+                    show = false;
+                }
+                
+                // Tournament filter
+                if (tournamentFilter && !tournament.includes(tournamentFilter)) {
+                    show = false;
+                }
+                
+                // Date from filter
+                if (dateFrom && date < dateFrom) {
+                    show = false;
+                }
+                
+                // Date to filter
+                if (dateTo && date > dateTo) {
+                    show = false;
+                }
+                
+                if (show) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show "no data" message only if no rows are visible and there are actual data rows
+            const noDataRow = clubTable.querySelector('tbody tr td[colspan]');
+            if (noDataRow) {
+                const noDataTr = noDataRow.closest('tr');
+                const hasDataRows = clubRows.length > 1 || (clubRows.length === 1 && !clubRows[0].querySelector('td[colspan]'));
+                if (visibleCount === 0 && hasDataRows) {
+                    noDataTr.style.display = '';
+                } else {
+                    noDataTr.style.display = 'none';
+                }
+            }
+        }
+        
+        // Add event listeners for club filters
+        if (clubFilterFencer) clubFilterFencer.addEventListener('input', applyClubFilters);
+        if (clubFilterTournament) clubFilterTournament.addEventListener('input', applyClubFilters);
+        if (clubFilterDateFrom) clubFilterDateFrom.addEventListener('change', applyClubFilters);
+        if (clubFilterDateTo) clubFilterDateTo.addEventListener('change', applyClubFilters);
+        
+        if (clubClearFilters) {
+            clubClearFilters.addEventListener('click', function() {
+                if (clubFilterFencer) clubFilterFencer.value = '';
+                if (clubFilterTournament) clubFilterTournament.value = '';
+                if (clubFilterDateFrom) clubFilterDateFrom.value = '';
+                if (clubFilterDateTo) clubFilterDateTo.value = '';
+                applyClubFilters();
+            });
+        }
+        
+        // Add event listeners for club table sorting
+        const clubSortableHeaders = clubTable.querySelectorAll('th.sortable');
+        clubSortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const sortColumn = this.getAttribute('data-sort');
+                sortClubTable(sortColumn);
+            });
         });
     }
 });

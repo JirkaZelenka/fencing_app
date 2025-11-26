@@ -47,34 +47,41 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Účast na turnajích</h5>
+                <h5 class="card-title">Účast na turnajích a akcích</h5>
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Turnaj</th>
+                                <th>Turnaj/Akce</th>
                                 <th>Datum</th>
                                 <th>Umístění</th>
-                                <th>Výhry</th>
-                                <th>Prohry</th>
-                                <th>Zasazené zásahy</th>
-                                <th>Obdržené zásahy</th>
+                                <th>Účast</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for participation in participations %}
+                            {% for item in combined_items %}
                             <tr>
-                                <td>{{ participation.tournament.name }}</td>
-                                <td>{{ participation.tournament.date }}</td>
-                                <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
-                                <td>{{ participation.wins }}</td>
-                                <td>{{ participation.losses }}</td>
-                                <td>{{ participation.touches_scored }}</td>
-                                <td>{{ participation.touches_received }}</td>
+                                <td>
+                                    {% if item.type == 'event' %}
+                                        <span class="badge bg-secondary me-2">Akce</span>
+                                    {% else %}
+                                        <span class="badge bg-primary me-2">Turnaj</span>
+                                    {% endif %}
+                                    {{ item.name }}
+                                </td>
+                                <td>{{ item.date }}</td>
+                                <td>{% if item.position %}{{ item.position }}. místo{% else %}-{% endif %}</td>
+                                <td>
+                                    {% if item.is_participating %}
+                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center">Zatím žádné účasti na turnajích</td>
+                                <td colspan="4" class="text-center">Zatím žádné turnaje ani akce</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -124,7 +124,7 @@ def home(request):
 def about_me(request):
     user = request.user
     profile = getattr(user, 'fencer_profile', None)
-    participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')[:10]
+    participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')
     
     # Basic statistics
     total_tournaments = participations.count()
@@ -135,9 +135,56 @@ def about_me(request):
     
     win_rate = (total_wins / (total_wins + total_losses) * 100) if (total_wins + total_losses) > 0 else 0
     
+    # Get all tournaments and create a dict for quick lookup
+    all_tournaments = Tournament.objects.all().order_by('-date')
+    participation_dict = {p.tournament_id: p for p in participations}
+    
+    # Create a set of tournament names and dates to detect duplicates
+    tournament_keys = {(t.name.lower().strip(), t.date) for t in all_tournaments}
+    
+    # Get all calendar events
+    all_events = CalendarEvent.objects.all().order_by('-start_date')
+    event_reactions = EventReaction.objects.filter(user=user, will_attend=True).values_list('event_id', flat=True)
+    event_reactions_set = set(event_reactions)
+    
+    # Combine tournaments and events into a unified list
+    combined_items = []
+    
+    # Add tournaments
+    for tournament in all_tournaments:
+        participation = participation_dict.get(tournament.id)
+        combined_items.append({
+            'type': 'tournament',
+            'name': tournament.name,
+            'date': tournament.date,
+            'location': tournament.location,
+            'is_participating': participation is not None,
+            'position': participation.position if participation else None,
+        })
+    
+    # Add calendar events, but skip if they match a tournament (by name and date)
+    for event in all_events:
+        event_date = event.start_date.date()
+        event_key = (event.title.lower().strip(), event_date)
+        
+        # Skip if this event matches a tournament (to avoid duplicates)
+        if event_key not in tournament_keys:
+            combined_items.append({
+                'type': 'event',
+                'name': event.title,
+                'date': event_date,
+                'location': event.location,
+                'is_participating': event.id in event_reactions_set,
+                'position': None,
+            })
+    
+    # Sort by date descending
+    combined_items.sort(key=lambda x: x['date'], reverse=True)
+    
     context = {
         'profile': profile,
         'participations': participations,
+        'combined_items': combined_items,
         'total_tournaments': total_tournaments,
         'total_wins': total_wins,
         'total_losses': total_losses,

@@ -5,7 +5,8 @@ from .models import (
     Club, FencerProfile, Event, EventParticipation,
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
     EventReaction, PaymentStatus, GlossaryTerm,
-    GuideVideo, RulesDocument, EquipmentItem, UserEquipment
+    GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
+    PhotoAlbum, SubAlbum
 )
 
 
@@ -84,9 +85,25 @@ class CircuitSongAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 
+@admin.register(PhotoAlbum)
+class PhotoAlbumAdmin(admin.ModelAdmin):
+    list_display = ['event', 'date', 'created_at']
+    list_filter = ['created_at', 'event__start_date']
+    search_fields = ['event__title']
+    readonly_fields = ['created_at']
+
+
+@admin.register(SubAlbum)
+class SubAlbumAdmin(admin.ModelAdmin):
+    list_display = ['name', 'album', 'created_by', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['name', 'album__event__title']
+    readonly_fields = ['created_at']
+
+
 @admin.register(EventPhoto)
 class EventPhotoAdmin(admin.ModelAdmin):
-    list_display = ['title', 'event_date', 'uploaded_by', 'is_featured']
+    list_display = ['title', 'event_date', 'uploaded_by', 'is_featured', 'subalbum']
     list_filter = ['is_featured', 'event_date', 'uploaded_at']
     search_fields = ['title', 'description']
 

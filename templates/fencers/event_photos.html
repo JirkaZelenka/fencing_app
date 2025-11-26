@@ -6,28 +6,32 @@
 <h1>Fotky z akcí</h1>
 
 <div class="row mt-4">
-    {% for photo in photos %}
+    {% for album in albums %}
     <div class="col-md-4 mb-4">
-        <div class="card">
-            <img src="{{ photo.photo.url }}" class="card-img-top" alt="{{ photo.title }}">
-            <div class="card-body">
-                <h5 class="card-title">{{ photo.title }}</h5>
-                {% if photo.description %}
-                    <p class="card-text">{{ photo.description }}</p>
+        <div class="card h-100">
+            <a href="{% url 'album_detail' album.id %}" class="text-decoration-none text-dark">
+                {% if album.cover_photo %}
+                    <img src="{{ album.cover_photo.url }}" class="card-img-top" alt="{{ album.event.title }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <span class="text-muted">Žádná obálka</span>
+                    </div>
                 {% endif %}
-                {% if photo.event_date %}
-                    <small class="text-muted">Datum akce: {{ photo.event_date }}</small>
-                {% endif %}
-            </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ album.event.title }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">{{ album.date|date:"d.m.Y" }}</small>
+                    </p>
+                </div>
+            </a>
         </div>
     </div>
     {% empty %}
     <div class="col-12">
         <div class="alert alert-info">
-            Zatím žádné fotky
+            Zatím žádná alba
         </div>
     </div>
     {% endfor %}
 </div>
 {% endblock %}
-

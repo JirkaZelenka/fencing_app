@@ -8,17 +8,17 @@
 {% if club %}
 <div class="mb-4">
     <div class="btn-group" role="group" aria-label="Toggle statistics view">
-        <input type="radio" class="btn-check" name="statisticsToggle" id="individualToggle" autocomplete="off" checked>
+        <input type="radio" class="btn-check" name="statisticsToggle" id="individualToggle" autocomplete="off" {% if initial_view != 'club' %}checked{% endif %}>
         <label class="btn btn-outline-primary" for="individualToggle">Moje statistiky</label>
         
-        <input type="radio" class="btn-check" name="statisticsToggle" id="clubToggle" autocomplete="off">
+        <input type="radio" class="btn-check" name="statisticsToggle" id="clubToggle" autocomplete="off" {% if initial_view == 'club' %}checked{% endif %}>
         <label class="btn btn-outline-primary" for="clubToggle">Klub</label>
     </div>
 </div>
 {% endif %}
 
 <!-- Individual Statistics Section -->
-<div id="individualStats" class="statistics-section">
+<div id="individualStats" class="statistics-section" {% if initial_view == 'club' %}style="display: none;"{% endif %}>
     <div class="card mt-4">
         <div class="card-body">
             <div class="row mb-3">
@@ -163,7 +163,7 @@
 
 <!-- Club Statistics Section -->
 {% if club %}
-<div id="clubStats" class="statistics-section" style="display: none;">
+<div id="clubStats" class="statistics-section" {% if initial_view != 'club' %}style="display: none;"{% endif %}>
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -191,7 +191,7 @@
                         </div>
                         <div class="col-md-3">
                             <label for="clubFilterTournament" class="form-label">Turnaj</label>
-                            <input type="text" class="form-control" id="clubFilterTournament" placeholder="Hledat turnaj...">
+                            <input type="text" class="form-control" id="clubFilterTournament" placeholder="Hledat turnaj..." {% if initial_tournament_filter %}value="{{ initial_tournament_filter }}"{% endif %}>
                         </div>
                         <div class="col-md-2">
                             <label for="clubFilterDateFrom" class="form-label">Datum od</label>
@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Club table sorting functionality
     const clubTable = document.getElementById('clubStatisticsTable');
+    const clubFilterFencer = document.getElementById('clubFilterFencer');
     if (clubTable) {
         const clubRows = Array.from(clubTable.querySelectorAll('tbody tr'));
         let clubCurrentSort = { column: null, direction: 'asc' };
@@ -735,7 +736,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 sortClubTable(sortColumn);
             });
         });
+        
+        // Apply filters on page load if tournament filter is set
+        {% if initial_tournament_filter %}
+        applyClubFilters();
+        {% endif %}
     }
+    
+    // Initialize view state on page load
+    {% if initial_view == 'club' %}
+    if (clubToggle && clubStats) {
+        clubToggle.checked = true;
+        clubStats.style.display = 'block';
+        if (individualStats) individualStats.style.display = 'none';
+        if (individualHumanitarian) individualHumanitarian.style.display = 'none';
+    }
+    {% endif %}
     
     // Individual Humanitarian table sorting
     const individualHumanitarianTable = document.getElementById('individualHumanitarianTable');

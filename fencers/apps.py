@@ -4,4 +4,7 @@ from django.apps import AppConfig
 class FencersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'fencers'
+    
+    def ready(self):
+        import fencers.signals
 

@@ -25,6 +25,12 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Účasti na turnajích</h5>
+                {% if tournament_filter %}
+                <div class="alert alert-info mb-3">
+                    Filtrováno podle: <strong>{{ tournament_filter }}</strong>
+                    <a href="{% url 'statistics_club' %}" class="btn btn-sm btn-outline-secondary ms-2">Zrušit filtr</a>
+                </div>
+                {% endif %}
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>

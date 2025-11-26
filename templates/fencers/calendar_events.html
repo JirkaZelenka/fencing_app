@@ -78,6 +78,20 @@
                                                     <span class="event-marker more">+{{ day_data.events|length|add:"-4" }}</span>
                                                 {% endif %}
                                             </div>
+                                            <!-- Hover buttons for events -->
+                                            <div class="event-hover-buttons">
+                                                {% for event in day_data.events %}
+                                                <div class="event-hover-item">
+                                                    <div class="event-title-small">{{ event.title }}</div>
+                                                    <div class="d-flex gap-1 mt-1">
+                                                        <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-xs btn-outline-primary">Výsledky</a>
+                                                        {% if event.has_album %}
+                                                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-xs btn-outline-primary">Fotky</a>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
                                         {% endif %}
                                     </div>
                                 {% else %}
@@ -117,6 +131,14 @@
                         <a href="{{ event.external_link }}" target="_blank" class="btn btn-sm btn-outline-primary">Odkaz na czechfencing</a>
                     {% endif %}
                 </p>
+                
+                <!-- Event Action Buttons -->
+                <div class="event-actions mt-3">
+                    <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                    {% if event.has_album %}
+                        <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm btn-outline-primary">Fotky</a>
+                    {% endif %}
+                </div>
                 
                 {% if event.allows_reaction %}
                     <form method="post" action="{% url 'event_reaction' event.id %}" class="mt-3">
@@ -163,6 +185,14 @@
                         {% endif %}
                         {% if event.location %}<br><strong>Místo:</strong> {{ event.location }}{% endif %}
                     </p>
+                    
+                    <!-- Event Action Buttons -->
+                    <div class="event-actions mt-3">
+                        <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                        {% if event.has_album %}
+                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm btn-outline-primary">Fotky</a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -173,6 +203,54 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calendar-day {
+        position: relative;
+    }
+    
+    .event-hover-buttons {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        margin-top: 0.25rem;
+    }
+    
+    .calendar-day.has-events:hover .event-hover-buttons {
+        display: block;
+    }
+    
+    .event-hover-item {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .event-hover-item:last-child {
+        border-bottom: none;
+    }
+    
+    .event-title-small {
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn-xs {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}

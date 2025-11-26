@@ -16,7 +16,7 @@ from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
     PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
-    UserEquipment, Club
+    UserEquipment, Club, PhotoAlbum, SubAlbum
 )
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm
 
@@ -253,6 +253,10 @@ def statistics_individual(request):
     club_participations = None
     internal_events = None
     
+    # Get URL parameters
+    view_param = request.GET.get('view', 'individual')  # 'individual' or 'club'
+    tournament_filter = request.GET.get('tournament', '').strip()
+    
     if profile and profile.club:
         club = profile.club
         club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
@@ -260,6 +264,11 @@ def statistics_individual(request):
         club_participations = EventParticipation.objects.filter(
             fencer_id__in=fencer_ids
         ).select_related('fencer', 'event')
+        
+        # Apply tournament filter if provided
+        if tournament_filter:
+            club_participations = club_participations.filter(event__title__icontains=tournament_filter)
+        
         internal_events = Event.objects.filter(
             event_type=Event.EventType.HUMANITARIAN
         ).order_by('-start_date')
@@ -271,6 +280,8 @@ def statistics_individual(request):
         'club_fencers': club_fencers,
         'club_participations': club_participations,
         'internal_tournaments': internal_events,
+        'initial_view': view_param,
+        'initial_tournament_filter': tournament_filter,
     }
     return render(request, 'fencers/statistics_individual.html', context)
 
@@ -291,6 +302,11 @@ def statistics_club(request):
         fencer_id__in=fencer_ids
     ).select_related('fencer', 'event')
     
+    # Filter by tournament name if provided
+    tournament_filter = request.GET.get('tournament', '').strip()
+    if tournament_filter:
+        participations = participations.filter(event__title__icontains=tournament_filter)
+    
     internal_events = Event.objects.filter(
         event_type=Event.EventType.TOURNAMENT
     ).order_by('-start_date')
@@ -300,6 +316,7 @@ def statistics_club(request):
         'club_fencers': club_fencers,
         'participations': participations,
         'internal_tournaments': internal_events,
+        'tournament_filter': tournament_filter,
     }
     return render(request, 'fencers/statistics_club.html', context)
 
@@ -356,11 +373,88 @@ def circuit_trainings(request):
 
 @login_required
 def event_photos(request):
-    photos = EventPhoto.objects.filter(is_featured=True).order_by('-event_date', '-uploaded_at')
+    albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__start_date')
     context = {
-        'photos': photos,
+        'albums': albums,
     }
     return render(request, 'fencers/event_photos.html', context)
+
+
+@login_required
+def album_detail(request, album_id):
+    album = get_object_or_404(PhotoAlbum.objects.select_related('event'), id=album_id)
+    subalbums = album.subalbums.all().prefetch_related('photos').order_by('-created_at')
+    
+    # Get all photos from all subalbums for browsing
+    all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related('subalbum', 'uploaded_by').order_by('-uploaded_at')
+    
+    context = {
+        'album': album,
+        'subalbums': subalbums,
+        'all_photos': all_photos,
+    }
+    return render(request, 'fencers/album_detail.html', context)
+
+
+@login_required
+@require_POST
+def create_subalbum(request, album_id):
+    album = get_object_or_404(PhotoAlbum, id=album_id)
+    name = request.POST.get('name', '').strip()
+    
+    if not name:
+        messages.error(request, 'Název subalba je povinný.')
+        return redirect('album_detail', album_id=album_id)
+    
+    subalbum = SubAlbum.objects.create(
+        album=album,
+        name=name,
+        created_by=request.user
+    )
+    messages.success(request, f'Subalbum "{name}" byl vytvořen.')
+    return redirect('album_detail', album_id=album_id)
+
+
+@login_required
+@require_POST
+def upload_photo(request, subalbum_id):
+    subalbum = get_object_or_404(SubAlbum.objects.select_related('album'), id=subalbum_id)
+    
+    if 'photo' not in request.FILES:
+        messages.error(request, 'Musíte vybrat fotku.')
+        return redirect('album_detail', album_id=subalbum.album.id)
+    
+    photo_file = request.FILES['photo']
+    title = request.POST.get('title', '').strip() or f"Fotka {subalbum.name}"
+    description = request.POST.get('description', '').strip()
+    
+    EventPhoto.objects.create(
+        title=title,
+        description=description,
+        photo=photo_file,
+        event_date=subalbum.album.event.start_date.date(),
+        uploaded_by=request.user,
+        subalbum=subalbum
+    )
+    
+    messages.success(request, 'Fotka byla nahrána.')
+    return redirect('album_detail', album_id=subalbum.album.id)
+
+
+@login_required
+@require_POST
+def update_album_cover(request, album_id):
+    album = get_object_or_404(PhotoAlbum, id=album_id)
+    
+    if 'cover_photo' not in request.FILES:
+        messages.error(request, 'Musíte vybrat fotku.')
+        return redirect('album_detail', album_id=album_id)
+    
+    album.cover_photo = request.FILES['cover_photo']
+    album.save()
+    
+    messages.success(request, 'Obalová fotka byla aktualizována.')
+    return redirect('album_detail', album_id=album_id)
 
 
 @login_required
@@ -419,13 +513,20 @@ def calendar_events(request):
         start_date__gte=first_day,
         start_date__lte=last_day,
         event_type__in=selected_types_set,
-    ).order_by('start_date')
+    ).prefetch_related('photo_album').order_by('start_date')
     
     # Create a dictionary of events by date
     events_by_date = {}
     
     for event in month_events:
         serialized = serialize_event(event)
+        # Add album info if it exists
+        try:
+            album = event.photo_album
+            serialized['has_album'] = True
+            serialized['album_id'] = album.id
+        except PhotoAlbum.DoesNotExist:
+            serialized['has_album'] = False
         event_date = serialized['start'].date()
         events_by_date.setdefault(event_date, []).append(serialized)
     
@@ -460,11 +561,11 @@ def calendar_events(request):
     upcoming_events_qs = Event.objects.filter(
         start_date__gte=now,
         event_type__in=selected_types_set,
-    ).order_by('start_date')
+    ).prefetch_related('photo_album').order_by('start_date')
     past_events_qs = Event.objects.filter(
         start_date__lt=now,
         event_type__in=selected_types_set,
-    ).order_by('-start_date')[:30]
+    ).prefetch_related('photo_album').order_by('-start_date')[:30]
     
     # Get user reactions and attach to events
     reaction_dict = {}
@@ -472,16 +573,28 @@ def calendar_events(request):
         reactions = EventReaction.objects.filter(user=request.user, event__in=upcoming_events_qs)
         reaction_dict = {r.event_id: r for r in reactions}
     
-    serialized_upcoming = [
-        serialize_event(event, reaction_dict.get(event.id))
-        for event in upcoming_events_qs
-    ]
+    serialized_upcoming = []
+    for event in upcoming_events_qs:
+        serialized = serialize_event(event, reaction_dict.get(event.id))
+        try:
+            album = event.photo_album
+            serialized['has_album'] = True
+            serialized['album_id'] = album.id
+        except PhotoAlbum.DoesNotExist:
+            serialized['has_album'] = False
+        serialized_upcoming.append(serialized)
     serialized_upcoming.sort(key=lambda item: item['start'])
     
-    serialized_past = [
-        serialize_event(event)
-        for event in past_events_qs
-    ]
+    serialized_past = []
+    for event in past_events_qs:
+        serialized = serialize_event(event)
+        try:
+            album = event.photo_album
+            serialized['has_album'] = True
+            serialized['album_id'] = album.id
+        except PhotoAlbum.DoesNotExist:
+            serialized['has_album'] = False
+        serialized_past.append(serialized)
     serialized_past.sort(key=lambda item: item['start'], reverse=True)
     serialized_past = serialized_past[:10]
     

@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ album.event.title }} - Fotoalbum{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>{{ album.event.title }}</h1>
+        <p class="text-muted mb-0">{{ album.date|date:"d.m.Y" }}</p>
+    </div>
+    <a href="{% url 'event_photos' %}" class="btn btn-outline-secondary">← Zpět na alba</a>
+</div>
+
+<!-- Cover Photo Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">Obalová fotka</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#coverPhotoForm">
+                {% if album.cover_photo %}Změnit{% else %}Nastavit{% endif %}
+            </button>
+        </div>
+        {% if album.cover_photo %}
+            <img src="{{ album.cover_photo.url }}" class="img-fluid rounded" alt="Obalová fotka" style="max-height: 300px; object-fit: cover;">
+        {% else %}
+            <p class="text-muted mb-0">Žádná obalová fotka</p>
+        {% endif %}
+        <div class="collapse mt-3" id="coverPhotoForm">
+            <form method="post" action="{% url 'update_album_cover' album.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-2">
+                    <input type="file" class="form-control" name="cover_photo" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">Nahrát obalovou fotku</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mb-4">
+    <button type="button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#addContentSection">
+        + Přidat obsah
+    </button>
+</div>
+
+<!-- Add Content Section (Collapsible) -->
+<div class="collapse mb-4" id="addContentSection">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Přidat obsah</h5>
+            
+            <!-- Create Subalbum Form -->
+            <div class="mb-4">
+                <h6>Vytvořit nové subalbum</h6>
+                <form method="post" action="{% url 'create_subalbum' album.id %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="name" placeholder="Název subalba" required>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">Vytvořit subalbum</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Upload Photo to Existing Subalbum -->
+            {% if subalbums %}
+            <div>
+                <h6>Nahrát fotku do subalba</h6>
+                {% for subalbum in subalbums %}
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ subalbum.name }}</h6>
+                        <form method="post" action="{% url 'upload_photo' subalbum.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <input type="file" class="form-control" name="photo" accept="image/*" required>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <input type="text" class="form-control" name="title" placeholder="Název (volitelné)">
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <textarea class="form-control" name="description" rows="1" placeholder="Popis (volitelný)"></textarea>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button type="submit" class="btn btn-sm btn-primary w-100">Nahrát</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Photos Gallery (Main View) -->
+<div class="mb-4">
+    <h3>Fotky</h3>
+    {% if all_photos %}
+    <div class="row" id="photoGallery">
+        {% for photo in all_photos %}
+        <div class="col-6 col-md-4 col-lg-3 mb-4">
+            <div class="card">
+                <img src="{{ photo.photo.url }}" 
+                     class="card-img-top photo-thumbnail" 
+                     alt="{{ photo.title|default:'Fotka' }}" 
+                     data-photo-index="{{ forloop.counter0 }}"
+                     data-photo-url="{{ photo.photo.url }}"
+                     data-photo-title="{{ photo.title|default:'' }}"
+                     data-photo-description="{{ photo.description|default:'' }}"
+                     data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
+                     data-photo-uploader="{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}"
+                     style="height: 200px; object-fit: cover; cursor: pointer;">
+                <div class="card-body">
+                    {% if photo.title %}
+                        <h6 class="card-title">{{ photo.title }}</h6>
+                    {% endif %}
+                    {% if photo.description %}
+                        <p class="card-text small text-muted">{{ photo.description }}</p>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            {% if photo.subalbum %}
+                                <span class="badge bg-secondary">{{ photo.subalbum.name }}</span>
+                            {% endif %}
+                        </small>
+                        <small class="text-muted">
+                            {{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Zatím žádné fotky. Vytvořte subalbum a nahrajte první fotky pomocí tlačítka "Přidat obsah" výše.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Photo Presentation Modal -->
+<div id="photoPresentation" class="photo-presentation" style="display: none;">
+    <div class="photo-presentation-overlay"></div>
+    <button class="photo-presentation-close" id="closePresentation">&times;</button>
+    <button class="photo-presentation-nav photo-presentation-prev" id="prevPhoto">‹</button>
+    <button class="photo-presentation-nav photo-presentation-next" id="nextPhoto">›</button>
+    <div class="photo-presentation-content">
+        <div class="photo-presentation-image-container">
+            <img id="presentationImage" src="" alt="" class="photo-presentation-image">
+            <div class="photo-presentation-info">
+                <h4 id="presentationTitle"></h4>
+                <p id="presentationDescription" class="text-muted"></p>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span id="presentationSubalbum" class="badge bg-secondary"></span>
+                    <span id="presentationUploader" class="text-muted"></span>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted" id="photoCounter"></small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subalbums List (Collapsible) -->
+{% if subalbums %}
+<div class="mt-4">
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#subalbumsSection">
+        Zobrazit subalba ({{ subalbums|length }})
+    </button>
+    <div class="collapse mt-3" id="subalbumsSection">
+        <div class="row">
+            {% for subalbum in subalbums %}
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ subalbum.name }}</h5>
+                        <small class="text-muted">Vytvořil: {{ subalbum.created_by.get_full_name|default:subalbum.created_by.username }}</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for photo in subalbum.photos.all|slice:":6" %}
+                            <div class="col-4 mb-2">
+                                <a href="{{ photo.photo.url }}" target="_blank">
+                                    <img src="{{ photo.photo.url }}" class="img-fluid rounded" alt="{{ photo.title }}" style="width: 100%; height: 100px; object-fit: cover;">
+                                </a>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted mb-0">Zatím žádné fotky</p>
+                            </div>
+                            {% endfor %}
+                            {% if subalbum.photos.count > 6 %}
+                            <div class="col-12">
+                                <small class="text-muted">+ {{ subalbum.photos.count|add:"-6" }} dalších fotek</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .photo-presentation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .photo-presentation-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+    }
+    
+    .photo-presentation-content {
+        position: relative;
+        z-index: 10000;
+        max-width: 90%;
+        max-height: 90%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .photo-presentation-image-container {
+        text-align: center;
+    }
+    
+    .photo-presentation-image {
+        max-width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+        border-radius: 8px;
+    }
+    
+    .photo-presentation-info {
+        color: white;
+        margin-top: 20px;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 0 20px;
+    }
+    
+    .photo-presentation-info h4 {
+        color: white;
+        margin-bottom: 10px;
+    }
+    
+    .photo-presentation-info .text-muted {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+    
+    .photo-presentation-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        font-size: 40px;
+        font-weight: bold;
+        color: white;
+        background: none;
+        border: none;
+        cursor: pointer;
+        z-index: 10001;
+        line-height: 1;
+        padding: 0;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.3s;
+    }
+    
+    .photo-presentation-close:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .photo-presentation-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 60px;
+        font-weight: bold;
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        cursor: pointer;
+        z-index: 10001;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.3s;
+        user-select: none;
+    }
+    
+    .photo-presentation-nav:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .photo-presentation-prev {
+        left: 30px;
+    }
+    
+    .photo-presentation-next {
+        right: 30px;
+    }
+    
+    .photo-thumbnail {
+        transition: transform 0.2s;
+    }
+    
+    .photo-thumbnail:hover {
+        transform: scale(1.05);
+    }
+    
+    @media (max-width: 768px) {
+        .photo-presentation-nav {
+            width: 50px;
+            height: 50px;
+            font-size: 40px;
+        }
+        
+        .photo-presentation-prev {
+            left: 10px;
+        }
+        
+        .photo-presentation-next {
+            right: 10px;
+        }
+        
+        .photo-presentation-close {
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photos = Array.from(document.querySelectorAll('.photo-thumbnail'));
+    const presentation = document.getElementById('photoPresentation');
+    const presentationImage = document.getElementById('presentationImage');
+    const presentationTitle = document.getElementById('presentationTitle');
+    const presentationDescription = document.getElementById('presentationDescription');
+    const presentationSubalbum = document.getElementById('presentationSubalbum');
+    const presentationUploader = document.getElementById('presentationUploader');
+    const photoCounter = document.getElementById('photoCounter');
+    const closeBtn = document.getElementById('closePresentation');
+    const prevBtn = document.getElementById('prevPhoto');
+    const nextBtn = document.getElementById('nextPhoto');
+    
+    let currentPhotoIndex = 0;
+    
+    function openPresentation(index) {
+        currentPhotoIndex = index;
+        updatePresentation();
+        presentation.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closePresentation() {
+        presentation.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    function updatePresentation() {
+        if (photos.length === 0) return;
+        
+        const photo = photos[currentPhotoIndex];
+        const photoUrl = photo.getAttribute('data-photo-url');
+        const photoTitle = photo.getAttribute('data-photo-title');
+        const photoDescription = photo.getAttribute('data-photo-description');
+        const photoSubalbum = photo.getAttribute('data-photo-subalbum');
+        const photoUploader = photo.getAttribute('data-photo-uploader');
+        
+        presentationImage.src = photoUrl;
+        presentationImage.alt = photoTitle || 'Fotka';
+        
+        if (photoTitle) {
+            presentationTitle.textContent = photoTitle;
+            presentationTitle.style.display = 'block';
+        } else {
+            presentationTitle.style.display = 'none';
+        }
+        
+        if (photoDescription) {
+            presentationDescription.textContent = photoDescription;
+            presentationDescription.style.display = 'block';
+        } else {
+            presentationDescription.style.display = 'none';
+        }
+        
+        if (photoSubalbum) {
+            presentationSubalbum.textContent = photoSubalbum;
+            presentationSubalbum.style.display = 'inline-block';
+        } else {
+            presentationSubalbum.style.display = 'none';
+        }
+        
+        presentationUploader.textContent = photoUploader;
+        photoCounter.textContent = `${currentPhotoIndex + 1} / ${photos.length}`;
+    }
+    
+    function showPrev() {
+        if (photos.length === 0) return;
+        currentPhotoIndex = (currentPhotoIndex - 1 + photos.length) % photos.length;
+        updatePresentation();
+    }
+    
+    function showNext() {
+        if (photos.length === 0) return;
+        currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+        updatePresentation();
+    }
+    
+    // Click on thumbnails to open presentation
+    photos.forEach((photo, index) => {
+        photo.addEventListener('click', function(e) {
+            e.preventDefault();
+            openPresentation(index);
+        });
+    });
+    
+    // Close button
+    closeBtn.addEventListener('click', closePresentation);
+    
+    // Navigation buttons
+    prevBtn.addEventListener('click', showPrev);
+    nextBtn.addEventListener('click', showNext);
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (presentation.style.display === 'none' || presentation.style.display === '') return;
+        
+        if (e.key === 'Escape') {
+            closePresentation();
+        } else if (e.key === 'ArrowLeft') {
+            showPrev();
+        } else if (e.key === 'ArrowRight') {
+            showNext();
+        }
+    });
+    
+    // Click on overlay to close
+    document.querySelector('.photo-presentation-overlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePresentation();
+        }
+    });
+    
+    // Click on image to go to next (left side = prev, right side = next)
+    presentationImage.addEventListener('click', function(e) {
+        const rect = presentationImage.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const imageWidth = rect.width;
+        
+        // Left half = previous, right half = next
+        if (clickX < imageWidth / 2) {
+            showPrev();
+        } else {
+            showNext();
+        }
+    });
+});
+</script>
+{% endblock %}

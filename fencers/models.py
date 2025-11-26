@@ -110,6 +110,39 @@ class CircuitSong(models.Model):
         verbose_name_plural = "Skladby pro masíčka"
 
 
+class PhotoAlbum(models.Model):
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name='photo_album', verbose_name="Akce")
+    cover_photo = models.ImageField(upload_to='album_covers/', null=True, blank=True, verbose_name="Obalová fotka")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Fotoalbum"
+        verbose_name_plural = "Fotoalba"
+        ordering = ['-event__start_date']
+    
+    def __str__(self):
+        return f"Album: {self.event.title}"
+    
+    @property
+    def date(self):
+        return self.event.start_date.date()
+
+
+class SubAlbum(models.Model):
+    album = models.ForeignKey(PhotoAlbum, on_delete=models.CASCADE, related_name='subalbums', verbose_name="Album")
+    name = models.CharField(max_length=200, verbose_name="Název")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Subalbum"
+        verbose_name_plural = "Subalba"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} ({self.album.event.title})"
+
+
 class EventPhoto(models.Model):
     title = models.CharField(max_length=200, verbose_name="Název")
     description = models.TextField(blank=True, verbose_name="Popis")
@@ -118,6 +151,7 @@ class EventPhoto(models.Model):
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Nahrál")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_featured = models.BooleanField(default=False, verbose_name="Doporučená")
+    subalbum = models.ForeignKey(SubAlbum, on_delete=models.CASCADE, related_name='photos', null=True, blank=True, verbose_name="Subalbum")
     
     class Meta:
         verbose_name = "Fotka z akce"

@@ -3,6 +3,9 @@
     --text-color: #212529;
     --card-bg: #ffffff;
     --border-color: #dee2e6;
+    --event-color-tournament: #0d6efd;
+    --event-color-humanitarian: #d63384;
+    --event-color-other: #6c757d;
 }
 
 [data-theme="dark"] {
@@ -63,6 +66,11 @@ body[data-theme="dark"] .table {
     --bs-table-striped-color: #f8f9fa;
     --bs-table-hover-bg: rgba(255, 255, 255, 0.22);
     --bs-table-hover-color: #ffffff;
+}
+
+body[data-theme="dark"] .event-marker.more {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
 }
 
 body[data-theme="dark"] .table tbody tr > * {
@@ -344,6 +352,113 @@ body[data-theme="dark"] .table thead th {
 }
 
 /* Calendar Styles */
+.event-type-filter-form .event-filter-chip {
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    background-color: var(--card-bg);
+}
+
+.event-filter-chip .form-check-input {
+    margin-right: 0.35rem;
+}
+
+.event-filter-chip.tournament .form-check-input {
+    accent-color: var(--event-color-tournament);
+}
+
+.event-filter-chip.humanitarian .form-check-input {
+    accent-color: var(--event-color-humanitarian);
+}
+
+.event-filter-chip.other .form-check-input {
+    accent-color: var(--event-color-other);
+}
+
+.event-filter-chip.tournament .form-check-input:checked + .form-check-label {
+    color: var(--event-color-tournament);
+    font-weight: 600;
+}
+
+.event-filter-chip.humanitarian .form-check-input:checked + .form-check-label {
+    color: var(--event-color-humanitarian);
+    font-weight: 600;
+}
+
+.event-filter-chip.other .form-check-input:checked + .form-check-label {
+    color: var(--event-color-other);
+    font-weight: 600;
+}
+
+.event-type-badge {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.75rem;
+}
+
+.event-type-badge.tournament {
+    background-color: var(--event-color-tournament);
+    color: #fff;
+}
+
+.event-type-badge.humanitarian {
+    background-color: var(--event-color-humanitarian);
+    color: #fff;
+}
+
+.event-type-badge.other {
+    background-color: var(--event-color-other);
+    color: #fff;
+}
+
+.event-marker-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.event-marker {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.event-marker.tournament {
+    background-color: var(--event-color-tournament);
+}
+
+.event-marker.humanitarian {
+    background-color: var(--event-color-humanitarian);
+}
+
+.event-marker.other {
+    background-color: var(--event-color-other);
+}
+
+.event-marker.more {
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+    line-height: 1.2;
+    background-color: rgba(0, 0, 0, 0.08);
+    color: var(--text-color);
+}
+
+.legend-box.event-type.tournament {
+    background-color: var(--event-color-tournament);
+}
+
+.legend-box.event-type.humanitarian {
+    background-color: var(--event-color-humanitarian);
+}
+
+.legend-box.event-type.other {
+    background-color: var(--event-color-other);
+}
+
 .calendar-grid {
     display: flex;
     flex-direction: column;

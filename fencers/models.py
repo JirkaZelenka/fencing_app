@@ -27,24 +27,38 @@ class FencerProfile(models.Model):
         verbose_name_plural = "Profily šermířů"
 
 
-class Tournament(models.Model):
-    name = models.CharField(max_length=200, verbose_name="Název turnaje")
-    date = models.DateField(verbose_name="Datum")
+class Event(models.Model):
+    class EventType(models.TextChoices):
+        TOURNAMENT = 'tournament', "Turnaj"
+        HUMANITARIAN = 'humanitarian', "Hum. turnaj"
+        OTHER = 'other', "Ostatní akce"
+
+    title = models.CharField(max_length=200, verbose_name="Název")
+    description = models.TextField(blank=True, verbose_name="Popis")
+    start_date = models.DateTimeField(verbose_name="Začátek")
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name="Konec")
     location = models.CharField(max_length=200, blank=True, verbose_name="Místo")
-    is_internal = models.BooleanField(default=False, verbose_name="Interní turnaj")
-    
-    def __str__(self):
-        return f"{self.name} ({self.date})"
+    external_link = models.URLField(blank=True, verbose_name="Externí odkaz (czechfencing)")
+    event_type = models.CharField(
+        max_length=20,
+        choices=EventType.choices,
+        default=EventType.OTHER,
+        verbose_name="Typ akce",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = "Turnaj"
-        verbose_name_plural = "Turnaje"
-        ordering = ['-date']
+        verbose_name = "Akce"
+        verbose_name_plural = "Akce"
+        ordering = ['start_date']
+
+    def __str__(self):
+        return f"{self.title} ({self.start_date:%d.%m.%Y})"
 
 
-class TournamentParticipation(models.Model):
-    fencer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tournament_participations', verbose_name="Šermíř")
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='participations', verbose_name="Turnaj")
+class EventParticipation(models.Model):
+    fencer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_participations', verbose_name="Šermíř")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='participations', verbose_name="Akce")
     position = models.IntegerField(null=True, blank=True, verbose_name="Umístění")
     wins = models.IntegerField(default=0, verbose_name="Výhry")
     losses = models.IntegerField(default=0, verbose_name="Prohry")
@@ -52,10 +66,10 @@ class TournamentParticipation(models.Model):
     touches_received = models.IntegerField(default=0, verbose_name="Obdržené zásahy")
     
     class Meta:
-        verbose_name = "Účast na turnaji"
-        verbose_name_plural = "Účasti na turnajích"
-        unique_together = ['fencer', 'tournament']
-        ordering = ['-tournament__date']
+        verbose_name = "Účast na akci"
+        verbose_name_plural = "Účasti na akcích"
+        unique_together = ['fencer', 'event']
+        ordering = ['-event__start_date']
 
 
 class TrainingNote(models.Model):
@@ -111,23 +125,8 @@ class EventPhoto(models.Model):
         ordering = ['-event_date', '-uploaded_at']
 
 
-class CalendarEvent(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Název")
-    description = models.TextField(blank=True, verbose_name="Popis")
-    start_date = models.DateTimeField(verbose_name="Začátek")
-    end_date = models.DateTimeField(null=True, blank=True, verbose_name="Konec")
-    location = models.CharField(max_length=200, blank=True, verbose_name="Místo")
-    external_link = models.URLField(blank=True, verbose_name="Externí odkaz (czechfencing)")
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Akce v kalendáři"
-        verbose_name_plural = "Akce v kalendáři"
-        ordering = ['start_date']
-
-
 class EventReaction(models.Model):
-    event = models.ForeignKey(CalendarEvent, on_delete=models.CASCADE, related_name='reactions', verbose_name="Akce")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='reactions', verbose_name="Akce")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_reactions', verbose_name="Uživatel")
     will_attend = models.BooleanField(default=False, verbose_name="Zúčastním se")
     comment = models.TextField(blank=True, verbose_name="Komentář")

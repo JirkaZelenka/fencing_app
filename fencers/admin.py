@@ -2,9 +2,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from .models import (
-    Club, FencerProfile, Tournament, TournamentParticipation,
+    Club, FencerProfile, Event, EventParticipation,
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
-    CalendarEvent, EventReaction, PaymentStatus, GlossaryTerm,
+    EventReaction, PaymentStatus, GlossaryTerm,
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment
 )
 
@@ -56,19 +56,11 @@ class ClubAdmin(admin.ModelAdmin):
     get_member_count.short_description = 'Počet členů'
 
 
-@admin.register(Tournament)
-class TournamentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'date', 'location', 'is_internal']
-    list_filter = ['is_internal', 'date']
-    search_fields = ['name', 'location']
-    date_hierarchy = 'date'
-
-
-@admin.register(TournamentParticipation)
-class TournamentParticipationAdmin(admin.ModelAdmin):
-    list_display = ['fencer', 'tournament', 'position', 'wins', 'losses']
-    list_filter = ['tournament', 'tournament__date']
-    search_fields = ['fencer__username', 'fencer__first_name', 'fencer__last_name', 'tournament__name']
+@admin.register(EventParticipation)
+class EventParticipationAdmin(admin.ModelAdmin):
+    list_display = ['fencer', 'event', 'position', 'wins', 'losses']
+    list_filter = ['event', 'event__start_date']
+    search_fields = ['fencer__username', 'fencer__first_name', 'fencer__last_name', 'event__title']
 
 
 @admin.register(TrainingNote)
@@ -99,10 +91,10 @@ class EventPhotoAdmin(admin.ModelAdmin):
     search_fields = ['title', 'description']
 
 
-@admin.register(CalendarEvent)
-class CalendarEventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'start_date', 'location']
-    list_filter = ['start_date']
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ['title', 'start_date', 'location', 'event_type']
+    list_filter = ['event_type', 'start_date']
     search_fields = ['title', 'description', 'location']
 
 
@@ -151,4 +143,3 @@ class UserEquipmentAdmin(admin.ModelAdmin):
     list_display = ['user', 'equipment', 'is_owned', 'purchase_date']
     list_filter = ['is_owned', 'purchase_date']
     search_fields = ['user__username', 'equipment__name']
-

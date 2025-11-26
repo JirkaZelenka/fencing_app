@@ -32,6 +32,7 @@
                                 <th>Šermíř</th>
                                 <th>Turnaj</th>
                                 <th>Datum</th>
+                                <th>Místo</th>
                                 <th>Umístění</th>
                                 <th>Výhry</th>
                                 <th>Prohry</th>
@@ -41,15 +42,16 @@
                             {% for participation in participations %}
                             <tr>
                                 <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
-                                <td>{{ participation.tournament.name }}</td>
-                                <td>{{ participation.tournament.date }}</td>
+                                <td>{{ participation.event.title }}</td>
+                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
+                                <td>{{ participation.event.location|default:"-" }}</td>
                                 <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center">Zatím žádné účasti</td>
+                                <td colspan="7" class="text-center">Zatím žádné účasti</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -77,8 +79,8 @@
                         <tbody>
                             {% for tournament in internal_tournaments %}
                             <tr>
-                                <td>{{ tournament.name }}</td>
-                                <td>{{ tournament.date }}</td>
+                                <td>{{ tournament.title }}</td>
+                                <td>{{ tournament.start_date|date:"d.m.Y" }}</td>
                                 <td>{{ tournament.location|default:"-" }}</td>
                             </tr>
                             {% empty %}

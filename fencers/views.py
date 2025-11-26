@@ -1,7 +1,10 @@
 import re
 import random
 import string
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from urllib.parse import urlencode
+
+from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
@@ -10,8 +13,8 @@ from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from .models import (
-    FencerProfile, Tournament, TournamentParticipation, TrainingNote,
-    CircuitTraining, CircuitSong, EventPhoto, CalendarEvent, EventReaction,
+    FencerProfile, Event, EventParticipation, TrainingNote,
+    CircuitTraining, CircuitSong, EventPhoto, EventReaction,
     PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
     UserEquipment, Club
 )
@@ -101,6 +104,59 @@ EQUIPMENT_LOADOUT_SLOTS = [
 ]
 
 
+EVENT_TYPE_ORDER = [
+    Event.EventType.TOURNAMENT,
+    Event.EventType.HUMANITARIAN,
+    Event.EventType.OTHER,
+]
+
+EVENT_TYPE_META = {
+    Event.EventType.TOURNAMENT: {
+        'label': "Turnaj",
+        'class_suffix': 'tournament',
+    },
+    Event.EventType.HUMANITARIAN: {
+        'label': "Hum. turnaj",
+        'class_suffix': 'humanitarian',
+    },
+    Event.EventType.OTHER: {
+        'label': "Ostatní",
+        'class_suffix': 'other',
+    },
+}
+
+
+def get_event_meta(event_type):
+    return EVENT_TYPE_META.get(event_type, EVENT_TYPE_META[Event.EventType.OTHER])
+
+
+def ensure_aware(dt: datetime) -> datetime:
+    if timezone.is_naive(dt):
+        return timezone.make_aware(dt, timezone.get_current_timezone())
+    return dt
+
+
+def serialize_event(event, reaction=None):
+    meta = get_event_meta(event.event_type)
+    has_time = event.start_date.time() != datetime.min.time()
+    return {
+        'id': event.id,
+        'title': event.title,
+        'description': event.description,
+        'start': event.start_date,
+        'end': event.end_date,
+        'location': event.location,
+        'external_link': event.external_link,
+        'event_type': event.event_type,
+        'type_label': meta['label'],
+        'class_suffix': meta['class_suffix'],
+        'source': 'event',
+        'allows_reaction': True,
+        'user_reaction': reaction,
+        'has_time': has_time,
+    }
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -127,66 +183,47 @@ def home(request):
 def about_me(request):
     user = request.user
     profile = getattr(user, 'fencer_profile', None)
-    participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')
+    tournament_participations = EventParticipation.objects.filter(
+        fencer=user,
+        event__event_type=Event.EventType.TOURNAMENT
+    ).select_related('event')
     
-    # Basic statistics
-    total_tournaments = participations.count()
-    total_wins = participations.aggregate(Sum('wins'))['wins__sum'] or 0
-    total_losses = participations.aggregate(Sum('losses'))['losses__sum'] or 0
-    total_touches_scored = participations.aggregate(Sum('touches_scored'))['touches_scored__sum'] or 0
-    total_touches_received = participations.aggregate(Sum('touches_received'))['touches_received__sum'] or 0
-    
+    # Basic statistics (only tournament-type events count here)
+    total_tournaments = tournament_participations.count()
+    total_wins = tournament_participations.aggregate(Sum('wins'))['wins__sum'] or 0
+    total_losses = tournament_participations.aggregate(Sum('losses'))['losses__sum'] or 0
+    total_touches_scored = tournament_participations.aggregate(Sum('touches_scored'))['touches_scored__sum'] or 0
+    total_touches_received = tournament_participations.aggregate(Sum('touches_received'))['touches_received__sum'] or 0
     win_rate = (total_wins / (total_wins + total_losses) * 100) if (total_wins + total_losses) > 0 else 0
     
-    # Get all tournaments and create a dict for quick lookup
-    all_tournaments = Tournament.objects.all().order_by('-date')
-    participation_dict = {p.tournament_id: p for p in participations}
+    all_events = Event.objects.all().order_by('-start_date')
+    participation_lookup = {
+        p.event_id: p for p in EventParticipation.objects.filter(fencer=user).select_related('event')
+    }
+    event_reactions = set(
+        EventReaction.objects.filter(user=user, will_attend=True).values_list('event_id', flat=True)
+    )
     
-    # Create a set of tournament names and dates to detect duplicates
-    tournament_keys = {(t.name.lower().strip(), t.date) for t in all_tournaments}
-    
-    # Get all calendar events
-    all_events = CalendarEvent.objects.all().order_by('-start_date')
-    event_reactions = EventReaction.objects.filter(user=user, will_attend=True).values_list('event_id', flat=True)
-    event_reactions_set = set(event_reactions)
-    
-    # Combine tournaments and events into a unified list
     combined_items = []
-    
-    # Add tournaments
-    for tournament in all_tournaments:
-        participation = participation_dict.get(tournament.id)
-        combined_items.append({
-            'type': 'tournament',
-            'name': tournament.name,
-            'date': tournament.date,
-            'location': tournament.location,
-            'is_participating': participation is not None,
-            'position': participation.position if participation else None,
-        })
-    
-    # Add calendar events, but skip if they match a tournament (by name and date)
     for event in all_events:
-        event_date = event.start_date.date()
-        event_key = (event.title.lower().strip(), event_date)
-        
-        # Skip if this event matches a tournament (to avoid duplicates)
-        if event_key not in tournament_keys:
-            combined_items.append({
-                'type': 'event',
+        meta = get_event_meta(event.event_type)
+        participation = participation_lookup.get(event.id)
+        is_participating = bool(participation or (event.id in event_reactions))
+        combined_items.append({
+            'event_type': event.event_type,
+            'type_label': meta['label'],
+            'class_suffix': meta['class_suffix'],
                 'name': event.title,
-                'date': event_date,
+            'date': event.start_date.date(),
                 'location': event.location,
-                'is_participating': event.id in event_reactions_set,
-                'position': None,
+            'is_participating': is_participating,
+            'position': participation.position if participation else None,
             })
-    
-    # Sort by date descending
     combined_items.sort(key=lambda x: x['date'], reverse=True)
     
     context = {
         'profile': profile,
-        'participations': participations,
+        'participations': tournament_participations,
         'combined_items': combined_items,
         'total_tournaments': total_tournaments,
         'total_wins': total_wins,
@@ -202,29 +239,38 @@ def about_me(request):
 def statistics_individual(request):
     user = request.user
     
-    # Individual statistics
-    individual_participations = TournamentParticipation.objects.filter(fencer=user).select_related('tournament')
+    individual_participations = EventParticipation.objects.filter(fencer=user).select_related('event')
     
-    # Club statistics (if user has a club)
+    # Get user's participations in humanitarian tournaments
+    humanitarian_participations = EventParticipation.objects.filter(
+        fencer=user,
+        event__event_type=Event.EventType.HUMANITARIAN
+    ).select_related('event').order_by('-event__start_date')
+    
     profile = getattr(user, 'fencer_profile', None)
     club = None
     club_fencers = None
     club_participations = None
-    internal_tournaments = None
+    internal_events = None
     
     if profile and profile.club:
         club = profile.club
         club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
         fencer_ids = [fp.user.id for fp in club_fencers]
-        club_participations = TournamentParticipation.objects.filter(fencer_id__in=fencer_ids).select_related('fencer', 'tournament')
-        internal_tournaments = Tournament.objects.filter(is_internal=True).order_by('-date')
+        club_participations = EventParticipation.objects.filter(
+            fencer_id__in=fencer_ids
+        ).select_related('fencer', 'event')
+        internal_events = Event.objects.filter(
+            event_type=Event.EventType.HUMANITARIAN
+        ).order_by('-start_date')
     
     context = {
         'participations': individual_participations,
+        'humanitarian_participations': humanitarian_participations,
         'club': club,
         'club_fencers': club_fencers,
         'club_participations': club_participations,
-        'internal_tournaments': internal_tournaments,
+        'internal_tournaments': internal_events,
     }
     return render(request, 'fencers/statistics_individual.html', context)
 
@@ -238,21 +284,22 @@ def statistics_club(request):
         messages.info(request, 'Nemáte přiřazený klub.')
         return redirect('about_me')
     
-    # Get all fencers from the same club
     club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
     fencer_ids = [fp.user.id for fp in club_fencers]
     
-    # Get all participations for club members
-    participations = TournamentParticipation.objects.filter(fencer_id__in=fencer_ids).select_related('fencer', 'tournament')
+    participations = EventParticipation.objects.filter(
+        fencer_id__in=fencer_ids
+    ).select_related('fencer', 'event')
     
-    # Get internal tournaments
-    internal_tournaments = Tournament.objects.filter(is_internal=True).order_by('-date')
+    internal_events = Event.objects.filter(
+        event_type=Event.EventType.TOURNAMENT
+    ).order_by('-start_date')
     
     context = {
         'club': profile.club,
         'club_fencers': club_fencers,
         'participations': participations,
-        'internal_tournaments': internal_tournaments,
+        'internal_tournaments': internal_events,
     }
     return render(request, 'fencers/statistics_club.html', context)
 
@@ -318,17 +365,16 @@ def event_photos(request):
 
 @login_required
 def calendar_events(request):
-    from datetime import datetime, timedelta
     import calendar
     
     # Get month and year from request, default to current month
+    current_dt = timezone.now()
     try:
-        year = int(request.GET.get('year', datetime.now().year))
-        month = int(request.GET.get('month', datetime.now().month))
+        year = int(request.GET.get('year', current_dt.year))
+        month = int(request.GET.get('month', current_dt.month))
     except (ValueError, TypeError):
-        now = datetime.now()
-        year = now.year
-        month = now.month
+        year = current_dt.year
+        month = current_dt.month
     
     # Calculate previous and next month
     if month == 1:
@@ -346,23 +392,45 @@ def calendar_events(request):
         next_year = year
     
     # Get first and last day of the month
-    first_day = datetime(year, month, 1)
+    first_day = ensure_aware(datetime(year, month, 1))
     last_day_num = calendar.monthrange(year, month)[1]
-    last_day = datetime(year, month, last_day_num, 23, 59, 59)
+    last_day = ensure_aware(datetime(year, month, last_day_num, 23, 59, 59))
+    
+    # Event type filters
+    selected_types = [t for t in request.GET.getlist('types') if t in EVENT_TYPE_META]
+    if not selected_types:
+        selected_types = EVENT_TYPE_ORDER.copy()
+    selected_types_set = set(selected_types)
+    
+    event_type_filters = [
+        {
+            'value': event_type,
+            'label': EVENT_TYPE_META[event_type]['label'],
+            'class_suffix': EVENT_TYPE_META[event_type]['class_suffix'],
+            'checked': event_type in selected_types_set,
+        }
+        for event_type in EVENT_TYPE_ORDER
+    ]
+    
+    filter_query = urlencode({'types': selected_types}, doseq=True)
     
     # Get all events in this month
-    month_events = CalendarEvent.objects.filter(
+    month_events = Event.objects.filter(
         start_date__gte=first_day,
-        start_date__lte=last_day
+        start_date__lte=last_day,
+        event_type__in=selected_types_set,
     ).order_by('start_date')
     
     # Create a dictionary of events by date
     events_by_date = {}
+    
     for event in month_events:
-        event_date = event.start_date.date()
-        if event_date not in events_by_date:
-            events_by_date[event_date] = []
-        events_by_date[event_date].append(event)
+        serialized = serialize_event(event)
+        event_date = serialized['start'].date()
+        events_by_date.setdefault(event_date, []).append(serialized)
+    
+    for event_list in events_by_date.values():
+        event_list.sort(key=lambda item: item['start'])
     
     # Generate calendar grid
     cal = calendar.monthcalendar(year, month)
@@ -376,26 +444,46 @@ def calendar_events(request):
                 day_date = date(year, month, day)
                 is_today = day_date == date.today()
                 has_events = day_date in events_by_date
+                day_events = events_by_date.get(day_date, [])
                 week_data.append({
                     'day': day,
                     'date': day_date,
                     'is_today': is_today,
                     'has_events': has_events,
-                    'events': events_by_date.get(day_date, [])
+                    'events': day_events,
                 })
         calendar_data.append(week_data)
     
     # Get upcoming events for the list view
-    now = datetime.now()
-    upcoming_events = CalendarEvent.objects.filter(start_date__gte=now).order_by('start_date')
-    past_events = CalendarEvent.objects.filter(start_date__lt=now).order_by('-start_date')[:10]
+    now = timezone.now()
+    
+    upcoming_events_qs = Event.objects.filter(
+        start_date__gte=now,
+        event_type__in=selected_types_set,
+    ).order_by('start_date')
+    past_events_qs = Event.objects.filter(
+        start_date__lt=now,
+        event_type__in=selected_types_set,
+    ).order_by('-start_date')[:30]
     
     # Get user reactions and attach to events
-    if request.user.is_authenticated:
-        reactions = EventReaction.objects.filter(user=request.user, event__in=upcoming_events)
+    reaction_dict = {}
+    if request.user.is_authenticated and upcoming_events_qs:
+        reactions = EventReaction.objects.filter(user=request.user, event__in=upcoming_events_qs)
         reaction_dict = {r.event_id: r for r in reactions}
-        for event in upcoming_events:
-            event.user_reaction = reaction_dict.get(event.id)
+    
+    serialized_upcoming = [
+        serialize_event(event, reaction_dict.get(event.id))
+        for event in upcoming_events_qs
+    ]
+    serialized_upcoming.sort(key=lambda item: item['start'])
+    
+    serialized_past = [
+        serialize_event(event)
+        for event in past_events_qs
+    ]
+    serialized_past.sort(key=lambda item: item['start'], reverse=True)
+    serialized_past = serialized_past[:10]
     
     # Month names in Czech
     month_names = ['', 'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
@@ -412,8 +500,11 @@ def calendar_events(request):
         'prev_month': prev_month,
         'next_year': next_year,
         'next_month': next_month,
-        'upcoming_events': upcoming_events,
-        'past_events': past_events,
+        'upcoming_events': serialized_upcoming,
+        'past_events': serialized_past,
+        'event_type_filters': event_type_filters,
+        'selected_types': selected_types,
+        'filter_query': filter_query,
     }
     return render(request, 'fencers/calendar_events.html', context)
 
@@ -421,7 +512,7 @@ def calendar_events(request):
 @login_required
 @require_POST
 def event_reaction(request, event_id):
-    event = get_object_or_404(CalendarEvent, id=event_id)
+    event = get_object_or_404(Event, id=event_id)
     reaction, created = EventReaction.objects.get_or_create(
         event=event,
         user=request.user,

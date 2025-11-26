@@ -62,11 +62,7 @@
                             {% for item in combined_items %}
                             <tr>
                                 <td>
-                                    {% if item.type == 'event' %}
-                                        <span class="badge bg-secondary me-2">Akce</span>
-                                    {% else %}
-                                        <span class="badge bg-primary me-2">Turnaj</span>
-                                    {% endif %}
+                                    <span class="badge event-type-badge {{ item.class_suffix }} me-2">{{ item.type_label }}</span>
                                     {{ item.name }}
                                 </td>
                                 <td>{{ item.date }}</td>

@@ -5,8 +5,63 @@
 {% block content %}
 <h1>Kalendář akcí</h1>
 
+<!-- Calendar View -->
 <div class="row mt-4">
-    <div class="col-12">
+    <div class="col-12 col-lg-6 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
+                <div>
+                    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-sm btn-outline-primary me-2">
+                        ← Předchozí
+                    </a>
+                    <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-sm btn-outline-primary">
+                        Další →
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="calendar-legend mb-3 d-flex flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box today me-2"></div>
+                        <small>Dnes</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box has-events me-2"></div>
+                        <small>Obsazené dny (akce)</small>
+                    </div>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-header">
+                        {% for day_name in day_names %}
+                            <div class="calendar-day-header">{{ day_name }}</div>
+                        {% endfor %}
+                    </div>
+                    {% for week in calendar_data %}
+                        <div class="calendar-week">
+                            {% for day_data in week %}
+                                {% if day_data %}
+                                    <div class="calendar-day {% if day_data.is_today %}today{% endif %} {% if day_data.has_events %}has-events{% endif %}" 
+                                         data-date="{{ day_data.date|date:'Y-m-d' }}"
+                                         {% if day_data.has_events %}data-bs-toggle="tooltip" data-bs-placement="top" 
+                                         title="{% for event in day_data.events %}• {{ event.title }}{% if event.location %} ({{ event.location }}){% endif %}{% if not forloop.last %}&#10;{% endif %}{% endfor %}"{% endif %}>
+                                        <div class="day-number">{{ day_data.day }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="calendar-day empty"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Events List -->
+<div class="row mt-4">
+    <div class="col-12 col-md-6">
         <h3>Nadcházející akce</h3>
         {% for event in upcoming_events %}
         <div class="card mb-3">
@@ -44,25 +99,51 @@
         </div>
         {% endfor %}
     </div>
-</div>
-
-{% if past_events %}
-<div class="row mt-4">
-    <div class="col-12">
+    
+    <div class="col-12 col-md-6">
         <h3>Minulé akce</h3>
-        {% for event in past_events %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">{{ event.title }}</h5>
-                <p class="card-text">
-                    <strong>Datum:</strong> {{ event.start_date|date:"d.m.Y H:i" }}
-                    {% if event.location %}<br><strong>Místo:</strong> {{ event.location }}{% endif %}
-                </p>
+        {% if past_events %}
+            {% for event in past_events %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ event.title }}</h5>
+                    <p class="card-text">
+                        <strong>Datum:</strong> {{ event.start_date|date:"d.m.Y H:i" }}
+                        {% if event.location %}<br><strong>Místo:</strong> {{ event.location }}{% endif %}
+                    </p>
+                </div>
             </div>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                Zatím žádné minulé akce
+            </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Bootstrap tooltips for calendar days with events
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true
+            });
+        });
+        
+        // Add click handler to scroll to events list
+        document.querySelectorAll('.calendar-day.has-events').forEach(function(day) {
+            day.addEventListener('click', function() {
+                var eventsSection = document.querySelector('.row.mt-4');
+                if (eventsSection) {
+                    eventsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
 

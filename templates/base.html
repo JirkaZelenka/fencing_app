@@ -41,7 +41,14 @@
                         <a class="nav-link" href="{% url 'calendar_events' %}">Kalendář akcí</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'payment_status' %}">Stav placení</a>
+                        <a class="nav-link" href="{% url 'payment_status' %}">
+                            Platby
+                            {% if user.is_authenticated and user.payment_status %}
+                                {% if not user.payment_status.is_paid %}
+                                    <span class="payment-warning-dot"></span>
+                                {% endif %}
+                            {% endif %}
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'equipment' %}">Vybavení</a>

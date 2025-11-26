@@ -22,6 +22,12 @@
                         {% if payment_status.amount %}
                             <p>Částka: {{ payment_status.amount }} Kč</p>
                         {% endif %}
+                        {% if payment_reference %}
+                            <p><strong>Variabilní symbol:</strong> {{ payment_reference }}</p>
+                        {% endif %}
+                        {% if payment_deadline %}
+                            <p><strong>Termín platby:</strong> {{ payment_deadline|date:"d.m.Y" }}</p>
+                        {% endif %}
                     </div>
                 {% endif %}
                 

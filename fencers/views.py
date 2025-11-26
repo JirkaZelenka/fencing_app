@@ -1,4 +1,7 @@
 import re
+import random
+import string
+from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate
@@ -316,7 +319,73 @@ def event_photos(request):
 @login_required
 def calendar_events(request):
     from datetime import datetime, timedelta
+    import calendar
     
+    # Get month and year from request, default to current month
+    try:
+        year = int(request.GET.get('year', datetime.now().year))
+        month = int(request.GET.get('month', datetime.now().month))
+    except (ValueError, TypeError):
+        now = datetime.now()
+        year = now.year
+        month = now.month
+    
+    # Calculate previous and next month
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+    
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+    
+    # Get first and last day of the month
+    first_day = datetime(year, month, 1)
+    last_day_num = calendar.monthrange(year, month)[1]
+    last_day = datetime(year, month, last_day_num, 23, 59, 59)
+    
+    # Get all events in this month
+    month_events = CalendarEvent.objects.filter(
+        start_date__gte=first_day,
+        start_date__lte=last_day
+    ).order_by('start_date')
+    
+    # Create a dictionary of events by date
+    events_by_date = {}
+    for event in month_events:
+        event_date = event.start_date.date()
+        if event_date not in events_by_date:
+            events_by_date[event_date] = []
+        events_by_date[event_date].append(event)
+    
+    # Generate calendar grid
+    cal = calendar.monthcalendar(year, month)
+    calendar_data = []
+    for week in cal:
+        week_data = []
+        for day in week:
+            if day == 0:
+                week_data.append(None)  # Day outside current month
+            else:
+                day_date = date(year, month, day)
+                is_today = day_date == date.today()
+                has_events = day_date in events_by_date
+                week_data.append({
+                    'day': day,
+                    'date': day_date,
+                    'is_today': is_today,
+                    'has_events': has_events,
+                    'events': events_by_date.get(day_date, [])
+                })
+        calendar_data.append(week_data)
+    
+    # Get upcoming events for the list view
     now = datetime.now()
     upcoming_events = CalendarEvent.objects.filter(start_date__gte=now).order_by('start_date')
     past_events = CalendarEvent.objects.filter(start_date__lt=now).order_by('-start_date')[:10]
@@ -328,7 +397,21 @@ def calendar_events(request):
         for event in upcoming_events:
             event.user_reaction = reaction_dict.get(event.id)
     
+    # Month names in Czech
+    month_names = ['', 'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
+                   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec']
+    day_names = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne']
+    
     context = {
+        'calendar_data': calendar_data,
+        'year': year,
+        'month': month,
+        'month_name': month_names[month],
+        'day_names': day_names,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
         'upcoming_events': upcoming_events,
         'past_events': past_events,
     }
@@ -355,12 +438,71 @@ def event_reaction(request, event_id):
     return redirect('calendar_events')
 
 
+# Payment utility functions
+def generate_payment_reference(user_id):
+    """Generate a random payment reference number"""
+    prefix = "PLATBA"
+    random_part = ''.join(random.choices(string.digits, k=8))
+    return f"{prefix}-{user_id}-{random_part}"
+
+
+def calculate_payment_amount(base_amount=500, discount=0):
+    """Calculate final payment amount with optional discount"""
+    if discount > 0:
+        return max(0, base_amount - (base_amount * discount / 100))
+    return base_amount
+
+
+def generate_payment_qr_data(amount, reference, account_number="1234567890/2010"):
+    """Generate payment QR code data string"""
+    return f"SPD*1.0*ACC:{account_number}*AM:{amount}*CC:CZK*MSG:{reference}*X-VS:{reference}"
+
+
+def validate_payment_reference(reference):
+    """Validate payment reference format"""
+    pattern = r'^PLATBA-\d+-\d{8}$'
+    return bool(re.match(pattern, reference))
+
+
+def process_payment_simulation(user, amount, reference):
+    """Simulate payment processing (random success/failure for demo)"""
+    # Random simulation - 80% success rate
+    success = random.random() > 0.2
+    
+    if success:
+        payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=user)
+        payment_status_obj.is_paid = True
+        payment_status_obj.payment_date = date.today()
+        payment_status_obj.amount = amount
+        payment_status_obj.save()
+        return {"success": True, "message": "Platba byla úspěšně zpracována", "reference": reference}
+    else:
+        return {"success": False, "message": "Platba selhala, zkuste to prosím znovu", "reference": reference}
+
+
+def get_payment_deadline():
+    """Get payment deadline (30 days from today)"""
+    return date.today() + timedelta(days=30)
+
+
 @login_required
 def payment_status(request):
     payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=request.user)
     
+    # Generate random payment reference if not paid
+    payment_reference = None
+    if not payment_status_obj.is_paid:
+        payment_reference = generate_payment_reference(request.user.id)
+    
+    # Calculate amount if not set
+    if not payment_status_obj.amount:
+        payment_status_obj.amount = calculate_payment_amount()
+        payment_status_obj.save()
+    
     context = {
         'payment_status': payment_status_obj,
+        'payment_reference': payment_reference,
+        'payment_deadline': get_payment_deadline(),
     }
     return render(request, 'fencers/payment_status.html', context)
 

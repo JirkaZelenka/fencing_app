@@ -157,6 +157,31 @@ class EventPhoto(models.Model):
         verbose_name = "Fotka z akce"
         verbose_name_plural = "Fotky z akcí"
         ordering = ['-event_date', '-uploaded_at']
+    
+    def get_like_count(self):
+        """Get the number of likes for this photo"""
+        return self.likes.count()
+    
+    def is_liked_by_user(self, user):
+        """Check if a user has liked this photo"""
+        if not user.is_authenticated:
+            return False
+        return self.likes.filter(user=user).exists()
+
+
+class PhotoLike(models.Model):
+    photo = models.ForeignKey(EventPhoto, on_delete=models.CASCADE, related_name='likes', verbose_name="Fotka")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='photo_likes', verbose_name="Uživatel")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Líbí se mi"
+        verbose_name_plural = "Líbí se mi"
+        unique_together = ['photo', 'user']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} likes {self.photo.title}"
 
 
 class EventReaction(models.Model):

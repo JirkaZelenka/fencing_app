@@ -6,7 +6,7 @@ from .models import (
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
     EventReaction, PaymentStatus, GlossaryTerm,
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
-    PhotoAlbum, SubAlbum
+    PhotoAlbum, SubAlbum, PhotoLike
 )
 
 
@@ -106,6 +106,13 @@ class EventPhotoAdmin(admin.ModelAdmin):
     list_display = ['title', 'event_date', 'uploaded_by', 'is_featured', 'subalbum']
     list_filter = ['is_featured', 'event_date', 'uploaded_at']
     search_fields = ['title', 'description']
+
+
+@admin.register(PhotoLike)
+class PhotoLikeAdmin(admin.ModelAdmin):
+    list_display = ['photo', 'user', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['photo__title', 'user__username']
 
 
 @admin.register(Event)

@@ -16,7 +16,7 @@ from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
     PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
-    UserEquipment, Club, PhotoAlbum, SubAlbum
+    UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike
 )
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm
 
@@ -373,9 +373,31 @@ def circuit_trainings(request):
 
 @login_required
 def event_photos(request):
-    albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__start_date')
+    # Get all albums
+    all_albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__start_date')
+    
+    # Extract unique years from albums
+    years = sorted(set(
+        album.event.start_date.year for album in all_albums
+    ), reverse=True)
+    
+    # Get filter year from request
+    filter_year = request.GET.get('year')
+    if filter_year:
+        try:
+            filter_year = int(filter_year)
+            albums = all_albums.filter(event__start_date__year=filter_year)
+        except (ValueError, TypeError):
+            albums = all_albums
+            filter_year = None
+    else:
+        albums = all_albums
+        filter_year = None
+    
     context = {
         'albums': albums,
+        'available_years': years,
+        'selected_year': filter_year,
     }
     return render(request, 'fencers/event_photos.html', context)
 
@@ -386,12 +408,18 @@ def album_detail(request, album_id):
     subalbums = album.subalbums.all().prefetch_related('photos').order_by('-created_at')
     
     # Get all photos from all subalbums for browsing
-    all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related('subalbum', 'uploaded_by').order_by('-uploaded_at')
+    all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').order_by('-uploaded_at')
+    
+    # Get user's liked photos for this album
+    user_liked_photo_ids = set(
+        PhotoLike.objects.filter(user=request.user, photo__in=all_photos).values_list('photo_id', flat=True)
+    )
     
     context = {
         'album': album,
         'subalbums': subalbums,
         'all_photos': all_photos,
+        'user_liked_photo_ids': user_liked_photo_ids,
     }
     return render(request, 'fencers/album_detail.html', context)
 
@@ -425,7 +453,7 @@ def upload_photo(request, subalbum_id):
         return redirect('album_detail', album_id=subalbum.album.id)
     
     photo_file = request.FILES['photo']
-    title = request.POST.get('title', '').strip() or f"Fotka {subalbum.name}"
+    title = request.POST.get('title', '').strip()
     description = request.POST.get('description', '').strip()
     
     EventPhoto.objects.create(
@@ -490,6 +518,16 @@ def calendar_events(request):
     last_day_num = calendar.monthrange(year, month)[1]
     last_day = ensure_aware(datetime(year, month, last_day_num, 23, 59, 59))
     
+    # Get filter year from request (for events list, not calendar month)
+    filter_year = request.GET.get('filter_year')
+    if filter_year:
+        try:
+            filter_year = int(filter_year)
+        except (ValueError, TypeError):
+            filter_year = None
+    else:
+        filter_year = None
+    
     # Event type filters
     selected_types = [t for t in request.GET.getlist('types') if t in EVENT_TYPE_META]
     if not selected_types:
@@ -506,6 +544,7 @@ def calendar_events(request):
         for event_type in EVENT_TYPE_ORDER
     ]
     
+    # Build filter query for URL parameters (only event types, not year filter)
     filter_query = urlencode({'types': selected_types}, doseq=True)
     
     # Get all events in this month
@@ -555,17 +594,29 @@ def calendar_events(request):
                 })
         calendar_data.append(week_data)
     
+    # Extract unique years from all events for filter buttons
+    all_events_years = sorted(set(
+        Event.objects.values_list('start_date__year', flat=True).distinct()
+    ), reverse=True)
+    
     # Get upcoming events for the list view
     now = timezone.now()
     
     upcoming_events_qs = Event.objects.filter(
         start_date__gte=now,
         event_type__in=selected_types_set,
-    ).prefetch_related('photo_album').order_by('start_date')
+    )
+    if filter_year:
+        upcoming_events_qs = upcoming_events_qs.filter(start_date__year=filter_year)
+    upcoming_events_qs = upcoming_events_qs.prefetch_related('photo_album').order_by('start_date')
+    
     past_events_qs = Event.objects.filter(
         start_date__lt=now,
         event_type__in=selected_types_set,
-    ).prefetch_related('photo_album').order_by('-start_date')[:30]
+    )
+    if filter_year:
+        past_events_qs = past_events_qs.filter(start_date__year=filter_year)
+    past_events_qs = past_events_qs.prefetch_related('photo_album').order_by('-start_date')[:30]
     
     # Get user reactions and attach to events
     reaction_dict = {}
@@ -618,6 +669,8 @@ def calendar_events(request):
         'event_type_filters': event_type_filters,
         'selected_types': selected_types,
         'filter_query': filter_query,
+        'available_years': all_events_years,
+        'selected_filter_year': filter_year,
     }
     return render(request, 'fencers/calendar_events.html', context)
 
@@ -819,4 +872,74 @@ def equipment(request):
         'loadout_slots_bottom': positions.get('bottom', []),
     }
     return render(request, 'fencers/equipment.html', context)
+
+
+@login_required
+@require_POST
+def toggle_photo_like(request, photo_id):
+    """Toggle like/unlike for a photo"""
+    photo = get_object_or_404(EventPhoto, id=photo_id)
+    
+    like, created = PhotoLike.objects.get_or_create(
+        photo=photo,
+        user=request.user
+    )
+    
+    if not created:
+        # Unlike - delete the like
+        like.delete()
+        is_liked = False
+    else:
+        # Like - keep it
+        is_liked = True
+    
+    like_count = photo.get_like_count()
+    
+    return JsonResponse({
+        'success': True,
+        'is_liked': is_liked,
+        'like_count': like_count
+    })
+
+
+@login_required
+def my_favorite_photos(request):
+    """View for 'Moje oblíbené' - user's liked photos"""
+    # Get all photos liked by the current user
+    liked_photos = EventPhoto.objects.filter(
+        likes__user=request.user
+    ).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').distinct().order_by('-likes__created_at')
+    
+    user_liked_photo_ids = set([photo.id for photo in liked_photos])
+    
+    context = {
+        'all_photos': liked_photos,
+        'user_liked_photo_ids': user_liked_photo_ids,
+        'is_special_album': True,
+        'album_title': 'Moje oblíbené',
+    }
+    return render(request, 'fencers/album_detail.html', context)
+
+
+@login_required
+def most_liked_photos(request):
+    """View for 'Nejoblíbenější fotky' - most liked photos (at least 1 like)"""
+    # Get all photos with at least 1 like, ordered by like count
+    liked_photos = EventPhoto.objects.annotate(
+        like_count=Count('likes')
+    ).filter(
+        like_count__gte=1
+    ).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').order_by('-like_count', '-uploaded_at')
+    
+    user_liked_photo_ids = set(
+        PhotoLike.objects.filter(user=request.user, photo__in=liked_photos).values_list('photo_id', flat=True)
+    )
+    
+    context = {
+        'all_photos': liked_photos,
+        'user_liked_photo_ids': user_liked_photo_ids,
+        'is_special_album': True,
+        'album_title': 'Nejoblíbenější fotky',
+    }
+    return render(request, 'fencers/album_detail.html', context)
 

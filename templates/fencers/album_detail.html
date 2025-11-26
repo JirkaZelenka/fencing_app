@@ -1,16 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ album.event.title }} - Fotoalbum{% endblock %}
+{% block title %}{% if is_special_album %}{{ album_title }}{% else %}{{ album.event.title }} - Fotoalbum{% endif %}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1>{{ album.event.title }}</h1>
+        <h1>{% if is_special_album %}{{ album_title }}{% else %}{{ album.event.title }}{% endif %}</h1>
+        {% if not is_special_album %}
         <p class="text-muted mb-0">{{ album.date|date:"d.m.Y" }}</p>
+        {% endif %}
     </div>
     <a href="{% url 'event_photos' %}" class="btn btn-outline-secondary">← Zpět na alba</a>
 </div>
 
+{% if not is_special_album %}
 <!-- Cover Photo Section -->
 <div class="card mb-4">
     <div class="card-body">
@@ -99,6 +102,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Photos Gallery (Main View) -->
 <div class="mb-4">
@@ -108,29 +112,44 @@
         {% for photo in all_photos %}
         <div class="col-6 col-md-4 col-lg-3 mb-4">
             <div class="card">
-                <img src="{{ photo.photo.url }}" 
-                     class="card-img-top photo-thumbnail" 
-                     alt="{{ photo.title|default:'Fotka' }}" 
-                     data-photo-index="{{ forloop.counter0 }}"
-                     data-photo-url="{{ photo.photo.url }}"
-                     data-photo-title="{{ photo.title|default:'' }}"
-                     data-photo-description="{{ photo.description|default:'' }}"
-                     data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
-                     data-photo-uploader="{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}"
-                     style="height: 200px; object-fit: cover; cursor: pointer;">
+                <div class="position-relative">
+                    <img src="{{ photo.photo.url }}" 
+                         class="card-img-top photo-thumbnail" 
+                         alt="{% if photo.title %}{{ photo.title }}{% else %}Photo{% endif %}" 
+                         data-photo-index="{{ forloop.counter0 }}"
+                         data-photo-url="{{ photo.photo.url }}"
+                         data-photo-title="{{ photo.title|default:'' }}"
+                         data-photo-description="{{ photo.description|default:'' }}"
+                         data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
+                         data-photo-uploader="{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}"
+                         style="height: 200px; object-fit: cover; cursor: pointer;">
+                    <button class="btn btn-sm photo-like-btn position-absolute top-0 end-0 m-2 {% if photo.id in user_liked_photo_ids %}liked{% endif %}" 
+                            data-photo-id="{{ photo.id }}"
+                            style="background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10;"
+                            onclick="event.stopPropagation(); toggleLike({{ photo.id }}, this);">
+                        <span class="photo-like-icon" style="font-size: 20px; {% if photo.id in user_liked_photo_ids %}color: #dc3545;{% else %}color: #6c757d; filter: grayscale(1); opacity: 0.7;{% endif %}">
+                            ❤️
+                        </span>
+                    </button>
+                    <span class="position-absolute top-0 start-0 m-2 photo-like-count" 
+                          data-photo-id="{{ photo.id }}"
+                          style="background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; z-index: 10;">
+                        {% if photo.like_count %}{{ photo.like_count }}{% else %}{{ photo.get_like_count }}{% endif %}
+                    </span>
+                </div>
                 <div class="card-body">
-                    {% if photo.title %}
-                        <h6 class="card-title">{{ photo.title }}</h6>
-                    {% endif %}
                     {% if photo.description %}
                         <p class="card-text small text-muted">{{ photo.description }}</p>
                     {% endif %}
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
-                            {% if photo.subalbum %}
-                                <span class="badge bg-secondary">{{ photo.subalbum.name }}</span>
-                            {% endif %}
-                        </small>
+                    <div class="d-flex flex-wrap gap-1 align-items-center mb-2">
+                        {% if photo.subalbum and photo.subalbum.album and photo.subalbum.album.event %}
+                            <span class="badge bg-primary">{{ photo.subalbum.album.event.title }}</span>
+                        {% endif %}
+                        {% if photo.subalbum %}
+                            <span class="badge bg-secondary">{{ photo.subalbum.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-1">
                         <small class="text-muted">
                             {{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}
                         </small>
@@ -172,7 +191,7 @@
 </div>
 
 <!-- Subalbums List (Collapsible) -->
-{% if subalbums %}
+{% if subalbums and not is_special_album %}
 <div class="mt-4">
     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#subalbumsSection">
         Zobrazit subalba ({{ subalbums|length }})
@@ -498,5 +517,108 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Like/Unlike functionality
+function toggleLike(photoId, buttonElement) {
+    const likeIcon = buttonElement.querySelector('.photo-like-icon');
+    const likeCountElement = document.querySelector(`.photo-like-count[data-photo-id="${photoId}"]`);
+    const isCurrentlyLiked = buttonElement.classList.contains('liked');
+    
+    // Optimistic update
+    if (isCurrentlyLiked) {
+        buttonElement.classList.remove('liked');
+        likeIcon.style.color = '#6c757d';
+        likeIcon.style.filter = 'grayscale(1)';
+        likeIcon.style.opacity = '0.7';
+        const currentCount = parseInt(likeCountElement.textContent) || 0;
+        likeCountElement.textContent = Math.max(0, currentCount - 1);
+    } else {
+        buttonElement.classList.add('liked');
+        likeIcon.style.color = '#dc3545';
+        likeIcon.style.filter = 'none';
+        likeIcon.style.opacity = '1';
+        const currentCount = parseInt(likeCountElement.textContent) || 0;
+        likeCountElement.textContent = currentCount + 1;
+    }
+    
+    // Send AJAX request
+    fetch(`/photos/photo/${photoId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI with server response
+            if (data.is_liked) {
+                buttonElement.classList.add('liked');
+                likeIcon.style.color = '#dc3545';
+                likeIcon.style.filter = 'none';
+                likeIcon.style.opacity = '1';
+            } else {
+                buttonElement.classList.remove('liked');
+                likeIcon.style.color = '#6c757d';
+                likeIcon.style.filter = 'grayscale(1)';
+                likeIcon.style.opacity = '0.7';
+            }
+            likeCountElement.textContent = data.like_count;
+        } else {
+            // Revert optimistic update on error
+            if (isCurrentlyLiked) {
+                buttonElement.classList.add('liked');
+                likeIcon.style.color = '#dc3545';
+                likeIcon.style.filter = 'none';
+                likeIcon.style.opacity = '1';
+                const currentCount = parseInt(likeCountElement.textContent) || 0;
+                likeCountElement.textContent = currentCount + 1;
+            } else {
+                buttonElement.classList.remove('liked');
+                likeIcon.style.color = '#6c757d';
+                likeIcon.style.filter = 'grayscale(1)';
+                likeIcon.style.opacity = '0.7';
+                const currentCount = parseInt(likeCountElement.textContent) || 0;
+                likeCountElement.textContent = Math.max(0, currentCount - 1);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert optimistic update on error
+        if (isCurrentlyLiked) {
+            buttonElement.classList.add('liked');
+            likeIcon.style.color = '#dc3545';
+            likeIcon.style.filter = 'none';
+            likeIcon.style.opacity = '1';
+            const currentCount = parseInt(likeCountElement.textContent) || 0;
+            likeCountElement.textContent = currentCount + 1;
+        } else {
+            buttonElement.classList.remove('liked');
+            likeIcon.style.color = '#6c757d';
+            likeIcon.style.filter = 'grayscale(1)';
+            likeIcon.style.opacity = '0.7';
+            const currentCount = parseInt(likeCountElement.textContent) || 0;
+            likeCountElement.textContent = Math.max(0, currentCount - 1);
+        }
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 </script>
 {% endblock %}

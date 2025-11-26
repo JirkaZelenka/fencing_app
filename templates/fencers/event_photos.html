@@ -5,7 +5,66 @@
 {% block content %}
 <h1>Fotky z akcí</h1>
 
+<!-- Special Albums (Always on top) -->
 <div class="row mt-4">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-primary">
+            <a href="{% url 'my_favorite_photos' %}" class="text-decoration-none text-dark">
+                <div class="card-img-top bg-primary d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <div class="text-center text-white">
+                        <h2 style="font-size: 60px;">❤️</h2>
+                        <h5 class="mt-2">Moje oblíbené</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Moje oblíbené</h5>
+                    <p class="card-text">
+                        <small class="text-muted">Fotky, které se mi líbí</small>
+                    </p>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 border-warning">
+            <a href="{% url 'most_liked_photos' %}" class="text-decoration-none text-dark">
+                <div class="card-img-top bg-warning d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <div class="text-center">
+                        <h2 style="font-size: 60px;">⭐</h2>
+                        <h5 class="mt-2">Nejoblíbenější fotky</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Nejoblíbenější fotky</h5>
+                    <p class="card-text">
+                        <small class="text-muted">Nejvíce oblíbené fotky</small>
+                    </p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Buttons -->
+{% if available_years %}
+<div class="mb-4">
+    <div class="btn-group" role="group" aria-label="Year filter">
+        <a href="{% url 'event_photos' %}" 
+           class="btn {% if not selected_year %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Vše
+        </a>
+        {% for year in available_years %}
+        <a href="{% url 'event_photos' %}?year={{ year }}" 
+           class="btn {% if selected_year == year %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ year }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Regular Albums -->
+<div class="row">
     {% for album in albums %}
     <div class="col-md-4 mb-4">
         <div class="card h-100">
@@ -29,7 +88,11 @@
     {% empty %}
     <div class="col-12">
         <div class="alert alert-info">
-            Zatím žádná alba
+            {% if selected_year %}
+                Žádná alba pro rok {{ selected_year }}
+            {% else %}
+                Zatím žádná alba
+            {% endif %}
         </div>
     </div>
     {% endfor %}

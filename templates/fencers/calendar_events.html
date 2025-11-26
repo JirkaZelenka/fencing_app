@@ -10,11 +10,13 @@
     <div class="card-body">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
             <h5 class="mb-0">Filtrovat podle typu akce</h5>
-            <small class="text-muted">Filtr platí pro kalendář i seznam níže</small>
         </div>
         <form method="get" class="event-type-filter-form mt-3">
             <input type="hidden" name="year" value="{{ year }}">
             <input type="hidden" name="month" value="{{ month }}">
+            {% if selected_filter_year %}
+            <input type="hidden" name="filter_year" value="{{ selected_filter_year }}">
+            {% endif %}
             <div class="d-flex flex-wrap gap-3">
                 {% for filter in event_type_filters %}
                     <div class="form-check form-check-inline event-filter-chip {{ filter.class_suffix }}">
@@ -37,12 +39,21 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">{{ month_name }} {{ year }}</h3>
                 <div>
-                    <a href="?year={{ prev_year }}&month={{ prev_month }}{% if filter_query %}&{{ filter_query }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">
+                    {% if filter_query or selected_filter_year %}
+                    <a href="?year={{ prev_year }}&month={{ prev_month }}{% if filter_query %}&{{ filter_query }}{% endif %}{% if selected_filter_year %}&filter_year={{ selected_filter_year }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">
                         ← Předchozí
                     </a>
-                    <a href="?year={{ next_year }}&month={{ next_month }}{% if filter_query %}&{{ filter_query }}{% endif %}" class="btn btn-sm btn-outline-primary">
+                    <a href="?year={{ next_year }}&month={{ next_month }}{% if filter_query %}&{{ filter_query }}{% endif %}{% if selected_filter_year %}&filter_year={{ selected_filter_year }}{% endif %}" class="btn btn-sm btn-outline-primary">
                         Další →
                     </a>
+                    {% else %}
+                    <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-sm btn-outline-primary me-2">
+                        ← Předchozí
+                    </a>
+                    <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-sm btn-outline-primary">
+                        Další →
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="card-body">
@@ -105,6 +116,24 @@
         </div>
     </div>
 </div>
+
+<!-- Year Filter Buttons -->
+{% if available_years %}
+<div class="mt-4 mb-3">
+    <div class="btn-group" role="group" aria-label="Year filter">
+        <a href="?year={{ year }}&month={{ month }}{% if filter_query %}&{{ filter_query }}{% endif %}" 
+           class="btn {% if not selected_filter_year %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Vše
+        </a>
+        {% for event_year in available_years %}
+        <a href="?year={{ year }}&month={{ month }}&filter_year={{ event_year }}{% if filter_query %}&{{ filter_query }}{% endif %}" 
+           class="btn {% if selected_filter_year == event_year %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ event_year }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- Events List -->
 <div class="row mt-4">

@@ -25,7 +25,7 @@
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label for="filterTournament" class="form-label">Turnaj</label>
-                    <input type="text" class="form-control" id="filterTournament" placeholder="Hledat turnaj...">
+                    <input type="text" class="form-control" id="filterTournament" placeholder="Hledat turnaj..." {% if initial_tournament_filter %}value="{{ initial_tournament_filter }}"{% endif %}>
                 </div>
                 <div class="col-md-3">
                     <label for="filterDateFrom" class="form-label">Datum od</label>
@@ -569,6 +569,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 sortTable(sortColumn);
             });
         });
+        
+        // Apply filters on page load if tournament filter is set
+        {% if initial_tournament_filter %}
+        applyFilters();
+        {% endif %}
     }
     
     // Club table sorting functionality

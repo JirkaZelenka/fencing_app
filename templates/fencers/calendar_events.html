@@ -95,9 +95,15 @@
                                                 <div class="event-hover-item">
                                                     <div class="event-title-small">{{ event.title }}</div>
                                                     <div class="d-flex gap-1 mt-1">
-                                                        <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-xs btn-outline-primary">Výsledky</a>
+                                                        {% if event.event_type == 'other' %}
+                                                            <span class="btn btn-xs btn-secondary" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
+                                                        {% elif event.user_participated %}
+                                                            <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-xs btn-success">Výsledky</a>
+                                                        {% else %}
+                                                            <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-xs btn-outline-primary">Výsledky</a>
+                                                        {% endif %}
                                                         {% if event.has_album %}
-                                                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-xs btn-outline-primary">Fotky</a>
+                                                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-xs {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -163,9 +169,15 @@
                 
                 <!-- Event Action Buttons -->
                 <div class="event-actions mt-3">
-                    <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                    {% if event.event_type == 'other' %}
+                        <span class="btn btn-sm btn-secondary me-2" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
+                    {% elif event.user_participated %}
+                        <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-success me-2">Výsledky</a>
+                    {% else %}
+                        <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                    {% endif %}
                     {% if event.has_album %}
-                        <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm btn-outline-primary">Fotky</a>
+                        <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
                     {% endif %}
                 </div>
                 
@@ -217,9 +229,15 @@
                     
                     <!-- Event Action Buttons -->
                     <div class="event-actions mt-3">
-                        <a href="{% url 'statistics_individual' %}?view=club{% if event.event_type == 'tournament' %}&tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                        {% if event.event_type == 'other' %}
+                            <span class="btn btn-sm btn-secondary me-2" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
+                        {% elif event.user_participated %}
+                            <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-success me-2">Výsledky</a>
+                        {% else %}
+                            <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
+                        {% endif %}
                         {% if event.has_album %}
-                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm btn-outline-primary">Fotky</a>
+                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
                         {% endif %}
                     </div>
                 </div>

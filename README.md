@@ -34,26 +34,20 @@ Funkce (jednotlivé stránky):
 
 TODO:
 
+eventy - přidat fajfku pokud jsem tam byl, zvýraznit fotky jen pokud tam nějaké jsou
 
-sekce O mně změnit na Humanita - bude mít dvě podsekce resp Toggle - Já / Klub
- v já bude to co je teď o Mně, a vdle v Klub budou Členové Klubu, co jsou teď ve Statistikách 
-
-likes - najedu nad srdíčko a vidím
-
-dodělat opravdové turnaje 2025 a 2024
+- fixnout Red dot pro nezaplacené poplatky + qR kod (kody) + možnost notifikovat admina když už jsem zaplatil
 
 - pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,
 a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral
 - moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
 připravit všem profily, jen naskočit...
 
+dodělat opravdové turnaje 2025 a 2024
+
 - Statistiky - přidat totaly nebo průměry, a filtry
 
-eventy - přidat fajfku pokud jsem tam byl, zvýraznit fotky jen pokud tam nějaké jsou
-
-vybavení -> změnit na WIKI, doplnit materiály a URLs, fotka hrotu atd
+WIKI -  doplnit materiály a URLs, fotka hrotu atd
 později linky na výbavu. Seznam dobrých značek...
-
-platby - opravdové qr kod, a nějaký systém.
 
 přidat kvalitní fotky všeho

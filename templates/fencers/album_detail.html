@@ -123,14 +123,30 @@
                          data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
                          data-photo-uploader="{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}"
                          style="height: 200px; object-fit: cover; cursor: pointer;">
-                    <button class="btn btn-sm photo-like-btn position-absolute top-0 end-0 m-2 {% if photo.id in user_liked_photo_ids %}liked{% endif %}" 
-                            data-photo-id="{{ photo.id }}"
-                            style="background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10;"
-                            onclick="event.stopPropagation(); toggleLike({{ photo.id }}, this);">
-                        <span class="photo-like-icon" style="font-size: 20px; {% if photo.id in user_liked_photo_ids %}color: #dc3545;{% else %}color: #6c757d; filter: grayscale(1); opacity: 0.7;{% endif %}">
-                            ❤️
-                        </span>
-                    </button>
+                    {% with like_list=photo.likes.all %}
+                    <div class="photo-like-wrapper position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                        <button class="btn btn-sm photo-like-btn {% if photo.id in user_liked_photo_ids %}liked{% endif %}" 
+                                data-photo-id="{{ photo.id }}"
+                                style="background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                                onclick="event.stopPropagation(); toggleLike({{ photo.id }}, this);">
+                            <span class="photo-like-icon" style="font-size: 20px; {% if photo.id in user_liked_photo_ids %}color: #dc3545;{% else %}color: #6c757d; filter: grayscale(1); opacity: 0.7;{% endif %}">
+                                ❤️
+                            </span>
+                        </button>
+                        <div class="photo-like-tooltip" data-photo-id="{{ photo.id }}" {% if like_list|length == 0 %}style="display: none;"{% endif %}>
+                            <div class="photo-like-tooltip-content">
+                                {% for like in like_list|slice:":5" %}
+                                    {% if like.user %}
+                                    <div class="photo-like-user">{{ like.user.get_full_name|default:like.user.username }}</div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if like_list|length > 5 %}
+                                    <div class="photo-like-more">+{{ like_list|length|add:"-5" }} dalších</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
                     <span class="position-absolute top-0 start-0 m-2 photo-like-count" 
                           data-photo-id="{{ photo.id }}"
                           style="background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; z-index: 10;">
@@ -363,6 +379,45 @@
         transform: scale(1.05);
     }
     
+    .photo-like-tooltip {
+        position: absolute;
+        top: 110%;
+        right: 0;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        min-width: 160px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-4px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        pointer-events: none;
+        font-size: 12px;
+    }
+    
+    .photo-like-wrapper:hover .photo-like-tooltip {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .photo-like-tooltip-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .photo-like-user {
+        white-space: nowrap;
+    }
+    
+    .photo-like-more {
+        font-size: 11px;
+        opacity: 0.8;
+    }
+    
     @media (max-width: 768px) {
         .photo-presentation-nav {
             width: 50px;
@@ -518,6 +573,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function updateLikeTooltip(photoId, likedUsers, remainingCount) {
+    const tooltip = document.querySelector(`.photo-like-tooltip[data-photo-id="${photoId}"]`);
+    if (!tooltip) {
+        return;
+    }
+    const users = Array.isArray(likedUsers) ? likedUsers : [];
+    const extra = Number.isFinite(remainingCount) ? remainingCount : 0;
+    if (!users.length && extra <= 0) {
+        tooltip.style.display = 'none';
+        tooltip.innerHTML = '';
+        return;
+    }
+    tooltip.style.display = '';
+    let html = '<div class="photo-like-tooltip-content">';
+    users.forEach((name) => {
+        html += `<div class="photo-like-user">${name}</div>`;
+    });
+    if (extra > 0) {
+        html += `<div class="photo-like-more">+${extra} dalších</div>`;
+    }
+    html += '</div>';
+    tooltip.innerHTML = html;
+}
+
 // Like/Unlike functionality
 function toggleLike(photoId, buttonElement) {
     const likeIcon = buttonElement.querySelector('.photo-like-icon');
@@ -565,6 +644,9 @@ function toggleLike(photoId, buttonElement) {
                 likeIcon.style.opacity = '0.7';
             }
             likeCountElement.textContent = data.like_count;
+            const likedUsers = Array.isArray(data.liked_users) ? data.liked_users : [];
+            const remainingLikes = Number.isFinite(data.remaining_likes) ? data.remaining_likes : 0;
+            updateLikeTooltip(photoId, likedUsers, remainingLikes);
         } else {
             // Revert optimistic update on error
             if (isCurrentlyLiked) {

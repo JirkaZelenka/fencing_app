@@ -357,7 +357,12 @@ def statistics_individual(request):
         return redirect('match_profile')
     
     profile = user.fencer_profile
-    individual_participations = EventParticipation.objects.filter(fencer=profile).select_related('event')
+    # Get all participations excluding humanitarian tournaments (they go in separate section)
+    individual_participations = EventParticipation.objects.filter(
+        fencer=profile
+    ).exclude(
+        event__event_type=Event.EventType.HUMANITARIAN
+    ).select_related('event')
     
     # Get user's participations in humanitarian tournaments
     humanitarian_participations = EventParticipation.objects.filter(
@@ -374,13 +379,26 @@ def statistics_individual(request):
     view_param = request.GET.get('view', 'individual')  # 'individual' or 'club'
     tournament_filter = request.GET.get('tournament', '').strip()
     
+    # Apply tournament filter to individual participations if provided
+    if tournament_filter:
+        individual_participations = individual_participations.filter(event__title__icontains=tournament_filter)
+    
     if profile.club:
         club = profile.club
         club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
         
-        club_participations_qs = EventParticipation.objects.filter(
+        # Base queryset for all club participations
+        club_participations_base = EventParticipation.objects.filter(
             fencer__in=club_fencers
         ).select_related('fencer', 'fencer__user', 'event')
+        
+        # Get humanitarian participations separately (not affected by filters)
+        club_humanitarian_participations = club_participations_base.filter(
+            event__event_type=Event.EventType.HUMANITARIAN
+        ).order_by('-event__start_date')
+        
+        # Apply filters to main participations queryset
+        club_participations_qs = club_participations_base
         
         # Apply tournament filter if provided
         if tournament_filter:
@@ -397,8 +415,8 @@ def statistics_individual(request):
                 club_participations_qs = club_participations_qs.filter(event__gender=Event.Gender.ALL)
             # If gender_filter is empty or invalid, show all
         
-        club_participations = club_participations_qs
-        club_humanitarian_participations = club_participations_qs.filter(
+        # Exclude humanitarian tournaments from main participations (they go in separate section)
+        club_participations = club_participations_qs.exclude(
             event__event_type=Event.EventType.HUMANITARIAN
         )
     else:
@@ -509,6 +527,29 @@ def circuit_trainings(request):
 
 
 @login_required
+@require_POST
+def edit_circuit_training(request, circuit_id):
+    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=request.user)
+    form = CircuitTrainingForm(request.POST, instance=circuit)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Masíčko bylo aktualizováno.')
+    else:
+        error_text = '; '.join([' '.join(errors) for errors in form.errors.values()]) or 'Zkontrolujte zadané údaje.'
+        messages.error(request, f'Masíčko se nepodařilo uložit: {error_text}')
+    return redirect('circuit_trainings')
+
+
+@login_required
+@require_POST
+def delete_circuit_training(request, circuit_id):
+    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=request.user)
+    circuit.delete()
+    messages.success(request, 'Masíčko bylo smazáno.')
+    return redirect('circuit_trainings')
+
+
+@login_required
 def event_photos(request):
     # Get all albums
     all_albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__start_date')
@@ -545,7 +586,12 @@ def album_detail(request, album_id):
     subalbums = album.subalbums.all().prefetch_related('photos').order_by('-created_at')
     
     # Get all photos from all subalbums for browsing
-    all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').order_by('-uploaded_at')
+    all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related(
+        'subalbum',
+        'subalbum__album',
+        'subalbum__album__event',
+        'uploaded_by'
+    ).prefetch_related('likes', 'likes__user').order_by('-uploaded_at')
     
     # Get user's liked photos for this album
     user_liked_photo_ids = set(
@@ -691,6 +737,30 @@ def calendar_events(request):
         event_type__in=selected_types_set,
     ).prefetch_related('photo_album').order_by('start_date')
     
+    # Get user's fencer profile for participation check
+    user_profile = None
+    user_participation_event_ids = set()
+    month_event_ids = list(month_events.values_list('id', flat=True))
+    if request.user.is_authenticated:
+        try:
+            user_profile = request.user.fencer_profile
+            if user_profile and month_event_ids:
+                user_participation_event_ids = set(
+                    EventParticipation.objects.filter(fencer=user_profile, event_id__in=month_event_ids)
+                    .values_list('event_id', flat=True)
+                )
+        except FencerProfile.DoesNotExist:
+            pass
+    
+    # Check which events have photos in subalbums
+    events_with_photos = set()
+    if month_event_ids:
+        events_with_photos = set(
+            EventPhoto.objects.filter(subalbum__album__event_id__in=month_event_ids)
+            .values_list('subalbum__album__event_id', flat=True)
+            .distinct()
+        )
+    
     # Create a dictionary of events by date
     events_by_date = {}
     
@@ -703,6 +773,10 @@ def calendar_events(request):
             serialized['album_id'] = album.id
         except PhotoAlbum.DoesNotExist:
             serialized['has_album'] = False
+        # Check if user participated
+        serialized['user_participated'] = event.id in user_participation_event_ids if user_participation_event_ids else False
+        # Check if event has photos in subalbums
+        serialized['has_photos'] = event.id in events_with_photos if events_with_photos else False
         event_date = serialized['start'].date()
         events_by_date.setdefault(event_date, []).append(serialized)
     
@@ -761,6 +835,26 @@ def calendar_events(request):
         reactions = EventReaction.objects.filter(user=request.user, event__in=upcoming_events_qs)
         reaction_dict = {r.event_id: r for r in reactions}
     
+    # Get user participation for upcoming and past events
+    upcoming_event_ids = list(upcoming_events_qs.values_list('id', flat=True))
+    past_event_ids = list(past_events_qs.values_list('id', flat=True))
+    all_list_event_ids = upcoming_event_ids + past_event_ids
+    user_participation_list_event_ids = set()
+    if user_profile and all_list_event_ids:
+        user_participation_list_event_ids = set(
+            EventParticipation.objects.filter(fencer=user_profile, event_id__in=all_list_event_ids)
+            .values_list('event_id', flat=True)
+        )
+    
+    # Check which list events have photos in subalbums
+    list_events_with_photos = set()
+    if all_list_event_ids:
+        list_events_with_photos = set(
+            EventPhoto.objects.filter(subalbum__album__event_id__in=all_list_event_ids)
+            .values_list('subalbum__album__event_id', flat=True)
+            .distinct()
+        )
+    
     serialized_upcoming = []
     for event in upcoming_events_qs:
         serialized = serialize_event(event, reaction_dict.get(event.id))
@@ -770,6 +864,10 @@ def calendar_events(request):
             serialized['album_id'] = album.id
         except PhotoAlbum.DoesNotExist:
             serialized['has_album'] = False
+        # Check if user participated
+        serialized['user_participated'] = event.id in user_participation_list_event_ids if user_participation_list_event_ids else False
+        # Check if event has photos in subalbums
+        serialized['has_photos'] = event.id in list_events_with_photos if list_events_with_photos else False
         serialized_upcoming.append(serialized)
     serialized_upcoming.sort(key=lambda item: item['start'])
     
@@ -782,6 +880,10 @@ def calendar_events(request):
             serialized['album_id'] = album.id
         except PhotoAlbum.DoesNotExist:
             serialized['has_album'] = False
+        # Check if user participated
+        serialized['user_participated'] = event.id in user_participation_list_event_ids if user_participation_list_event_ids else False
+        # Check if event has photos in subalbums
+        serialized['has_photos'] = event.id in list_events_with_photos if list_events_with_photos else False
         serialized_past.append(serialized)
     serialized_past.sort(key=lambda item: item['start'], reverse=True)
     serialized_past = serialized_past[:10]
@@ -1042,11 +1144,22 @@ def toggle_photo_like(request, photo_id):
         is_liked = True
     
     like_count = photo.get_like_count()
+    recent_likes = list(
+        photo.likes.select_related('user').order_by('-created_at')[:5]
+    )
+    liked_users = [
+        like.user.get_full_name() or like.user.username
+        for like in recent_likes
+        if like.user
+    ]
+    remaining_likes = max(like_count - len(liked_users), 0)
     
     return JsonResponse({
         'success': True,
         'is_liked': is_liked,
-        'like_count': like_count
+        'like_count': like_count,
+        'liked_users': liked_users,
+        'remaining_likes': remaining_likes,
     })
 
 
@@ -1056,7 +1169,12 @@ def my_favorite_photos(request):
     # Get all photos liked by the current user
     liked_photos = EventPhoto.objects.filter(
         likes__user=request.user
-    ).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').distinct().order_by('-likes__created_at')
+    ).select_related(
+        'subalbum',
+        'subalbum__album',
+        'subalbum__album__event',
+        'uploaded_by'
+    ).prefetch_related('likes', 'likes__user').distinct().order_by('-likes__created_at')
     
     user_liked_photo_ids = set([photo.id for photo in liked_photos])
     
@@ -1077,7 +1195,12 @@ def most_liked_photos(request):
         like_count=Count('likes')
     ).filter(
         like_count__gte=1
-    ).select_related('subalbum', 'subalbum__album', 'subalbum__album__event', 'uploaded_by').prefetch_related('likes').order_by('-like_count', '-uploaded_at')
+    ).select_related(
+        'subalbum',
+        'subalbum__album',
+        'subalbum__album__event',
+        'uploaded_by'
+    ).prefetch_related('likes', 'likes__user').order_by('-like_count', '-uploaded_at')
     
     user_liked_photo_ids = set(
         PhotoLike.objects.filter(user=request.user, photo__in=liked_photos).values_list('photo_id', flat=True)

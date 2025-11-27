@@ -69,6 +69,40 @@
                 </ul>
                 {% endif %}
                 
+                {% if circuit.created_by == user %}
+                <div class="mt-3 d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#editCircuit{{ circuit.id }}">
+                        Upravit
+                    </button>
+                    <form method="post" action="{% url 'delete_circuit_training' circuit.id %}" class="d-inline" onsubmit="return confirm('Opravdu chcete masíčko smazat?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Smazat</button>
+                    </form>
+                </div>
+                <div class="collapse mt-3" id="editCircuit{{ circuit.id }}">
+                    <form method="post" action="{% url 'edit_circuit_training' circuit.id %}" class="border rounded p-3 bg-light">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="editName{{ circuit.id }}" class="form-label">Název</label>
+                            <input type="text" class="form-control" id="editName{{ circuit.id }}" name="name" value="{{ circuit.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDescription{{ circuit.id }}" class="form-label">Popis</label>
+                            <textarea class="form-control" id="editDescription{{ circuit.id }}" name="description" rows="3">{{ circuit.description|default_if_none:'' }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editExercises{{ circuit.id }}" class="form-label">Cvičení (každé na nový řádek)</label>
+                            <textarea class="form-control" id="editExercises{{ circuit.id }}" name="exercises" rows="10" required>{{ circuit.exercises|default_if_none:'' }}</textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editPublic{{ circuit.id }}" name="is_public" {% if circuit.is_public %}checked{% endif %}>
+                            <label class="form-check-label" for="editPublic{{ circuit.id }}">Zveřejnit</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Uložit změny</button>
+                    </form>
+                </div>
+                {% endif %}
+                
                 <small class="text-muted">Vytvořil: {{ circuit.created_by.get_full_name|default:circuit.created_by.username }} | {{ circuit.created_at|date:"d.m.Y H:i" }}</small>
             </div>
         </div>

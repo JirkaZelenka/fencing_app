@@ -14,7 +14,7 @@ class FencerProfileInline(admin.StackedInline):
     model = FencerProfile
     can_delete = False
     verbose_name_plural = 'Profil šermíře'
-    fields = ('club', 'phone')
+    fields = ('club', 'phone', 'gender')
 
 
 class UserAdmin(BaseUserAdmin):
@@ -36,11 +36,11 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(FencerProfile)
 class FencerProfileAdmin(admin.ModelAdmin):
-    list_display = ['get_display_name', 'user', 'club', 'phone', 'get_user_email', 'is_matched']
-    list_filter = ['club', 'user']
+    list_display = ['get_display_name', 'user', 'club', 'gender', 'phone', 'get_user_email', 'is_matched']
+    list_filter = ['club', 'user', 'gender']
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email', 'first_name', 'last_name', 'email', 'phone']
     autocomplete_fields = ['user']
-    fields = ('user', 'club', 'phone', 'first_name', 'last_name', 'email')
+    fields = ('user', 'club', 'phone', 'gender', 'first_name', 'last_name', 'email')
     actions = ['unpair_selected_profiles']
     
     def unpair_selected_profiles(self, request, queryset):
@@ -157,8 +157,8 @@ class PhotoLikeAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'start_date', 'location', 'event_type']
-    list_filter = ['event_type', 'start_date']
+    list_display = ['title', 'start_date', 'location', 'event_type', 'gender']
+    list_filter = ['event_type', 'start_date', 'gender']
     search_fields = ['title', 'description', 'location']
 
 

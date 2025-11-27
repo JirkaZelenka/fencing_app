@@ -33,12 +33,17 @@ Funkce (jednotlivé stránky):
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
 TODO:
-- Statistiky - členové klubu - rozdělit muži ženy, abecedně příjmení jméno, fajfka u těch co se už napárovali.
 
-Dále: rozdělit turnaje na mužské a ženské ... aby ty pozice dávaly smysl..
+sekce O mně změnit na Humanita - bude mít dvě podsekce resp Toggle - Já / Klub
+ v já bude to co je teď o Mně, a vdle v Klub budou Členové Klubu, co jsou teď ve Statistikách 
+
+likes - najedu nad srdíčko a vidím
 
 dodělat opravdové turnaje 2025 a 2024
 
+- pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,
+a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral)
+- moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
 připravit všem profily, jen naskočit...
 
 - Statistiky - přidat totaly nebo průměry, a filtry

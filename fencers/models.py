@@ -15,9 +15,20 @@ class Club(models.Model):
 
 
 class FencerProfile(models.Model):
+    class Gender(models.TextChoices):
+        MALE = 'M', "M"
+        FEMALE = 'Z', "Ž"
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fencer_profile', null=True, blank=True, verbose_name="Uživatel")
     club = models.ForeignKey(Club, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Klub")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Telefon")
+    gender = models.CharField(
+        max_length=1,
+        choices=Gender.choices,
+        blank=True,
+        null=True,
+        verbose_name="Pohlaví"
+    )
     # Optional fields to help identify the profile before user matching
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
@@ -39,6 +50,11 @@ class Event(models.Model):
         TOURNAMENT = 'tournament', "Turnaj"
         HUMANITARIAN = 'humanitarian', "Hum. turnaj"
         OTHER = 'other', "Ostatní akce"
+    
+    class Gender(models.TextChoices):
+        MALE = 'M', "M"
+        FEMALE = 'Z', "Ž"
+        ALL = 'V', "Vše"
 
     title = models.CharField(max_length=200, verbose_name="Název")
     description = models.TextField(blank=True, verbose_name="Popis")
@@ -51,6 +67,12 @@ class Event(models.Model):
         choices=EventType.choices,
         default=EventType.OTHER,
         verbose_name="Typ akce",
+    )
+    gender = models.CharField(
+        max_length=1,
+        choices=Gender.choices,
+        default=Gender.ALL,
+        verbose_name="Pohlaví"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     

@@ -169,11 +169,61 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Členové klubu</h5>
-                    <ul>
-                        {% for fencer_profile in club_fencers %}
-                        <li>{% if fencer_profile.user %}{{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}{% else %}{{ fencer_profile.first_name }} {{ fencer_profile.last_name }}{% endif %}</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Muži (M)</h6>
+                            <ul>
+                                {% for fencer_profile in club_fencers_m %}
+                                <li>
+                                    {% if fencer_profile.user %}
+                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                    {% else %}
+                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                    {% endif %}
+                                </li>
+                                {% empty %}
+                                <li class="text-muted">Žádní muži</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Ženy (Ž)</h6>
+                            <ul>
+                                {% for fencer_profile in club_fencers_z %}
+                                <li>
+                                    {% if fencer_profile.user %}
+                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                    {% else %}
+                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                    {% endif %}
+                                </li>
+                                {% empty %}
+                                <li class="text-muted">Žádné ženy</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% if club_fencers_undefined %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Nedefinováno</h6>
+                            <ul>
+                                {% for fencer_profile in club_fencers_undefined %}
+                                <li>
+                                    {% if fencer_profile.user %}
+                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                    {% else %}
+                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -185,13 +235,21 @@
                 <div class="card-body">
                     <h5 class="card-title">Účasti na turnajích</h5>
                     <div class="row mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="clubFilterFencer" class="form-label">Šermíř</label>
                             <input type="text" class="form-control" id="clubFilterFencer" placeholder="Hledat šermíře...">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="clubFilterTournament" class="form-label">Turnaj</label>
                             <input type="text" class="form-control" id="clubFilterTournament" placeholder="Hledat turnaj..." {% if initial_tournament_filter %}value="{{ initial_tournament_filter }}"{% endif %}>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="clubFilterGender" class="form-label">Pohlaví</label>
+                            <select class="form-control" id="clubFilterGender">
+                                <option value="">Vše</option>
+                                <option value="M" {% if initial_gender_filter == 'M' %}selected{% endif %}>M</option>
+                                <option value="Z" {% if initial_gender_filter == 'Z' %}selected{% endif %}>Ž</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
                             <label for="clubFilterDateFrom" class="form-label">Datum od</label>
@@ -639,9 +697,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Club table filtering functionality
         const clubFilterFencer = document.getElementById('clubFilterFencer');
         const clubFilterTournament = document.getElementById('clubFilterTournament');
+        const clubFilterGender = document.getElementById('clubFilterGender');
         const clubFilterDateFrom = document.getElementById('clubFilterDateFrom');
         const clubFilterDateTo = document.getElementById('clubFilterDateTo');
         const clubClearFilters = document.getElementById('clubClearFilters');
+        
+        // Gender filter should reload page with new URL parameter (server-side filtering)
+        if (clubFilterGender) {
+            clubFilterGender.addEventListener('change', function() {
+                const params = new URLSearchParams(window.location.search);
+                const genderValue = this.value;
+                if (genderValue) {
+                    params.set('gender', genderValue);
+                } else {
+                    params.delete('gender');
+                }
+                // Preserve view parameter
+                params.set('view', 'club');
+                // Preserve tournament filter if exists
+                if (clubFilterTournament && clubFilterTournament.value) {
+                    params.set('tournament', clubFilterTournament.value);
+                }
+                window.location.search = params.toString();
+            });
+        }
         
         function applyClubFilters() {
             const fencerFilter = clubFilterFencer ? clubFilterFencer.value.toLowerCase().trim() : '';
@@ -722,9 +801,15 @@ document.addEventListener('DOMContentLoaded', function() {
             clubClearFilters.addEventListener('click', function() {
                 if (clubFilterFencer) clubFilterFencer.value = '';
                 if (clubFilterTournament) clubFilterTournament.value = '';
+                if (clubFilterGender) clubFilterGender.value = '';
                 if (clubFilterDateFrom) clubFilterDateFrom.value = '';
                 if (clubFilterDateTo) clubFilterDateTo.value = '';
-                applyClubFilters();
+                // Reload page to clear server-side gender filter
+                const params = new URLSearchParams(window.location.search);
+                params.delete('gender');
+                params.delete('tournament');
+                params.set('view', 'club');
+                window.location.search = params.toString();
             });
         }
         

@@ -21,6 +21,7 @@
 <div id="individualStats" class="statistics-section" {% if initial_view == 'club' %}style="display: none;"{% endif %}>
     <div class="card mt-4">
         <div class="card-body">
+            <h5 class="card-title">Účasti na turnajích</h5>
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label for="filterTournament" class="form-label">Turnaj</label>
@@ -111,8 +112,8 @@
                     <table class="table table-striped" id="individualHumanitarianTable">
                         <thead>
                             <tr>
-                                <th class="sortable" data-sort="name" style="cursor: pointer;">
-                                    Název <span class="sort-indicator">↕</span>
+                                <th class="sortable" data-sort="tournament" style="cursor: pointer;">
+                                    Turnaj <span class="sort-indicator">↕</span>
                                 </th>
                                 <th class="sortable" data-sort="date" style="cursor: pointer;">
                                     Datum <span class="sort-indicator">↕</span>
@@ -129,16 +130,24 @@
                                 <th class="sortable" data-sort="losses" style="cursor: pointer;">
                                     Prohry <span class="sort-indicator">↕</span>
                                 </th>
+                                <th class="sortable" data-sort="touches_scored" style="cursor: pointer;">
+                                    Zasazené zásahy <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="touches_received" style="cursor: pointer;">
+                                    Obdržené zásahy <span class="sort-indicator">↕</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for participation in humanitarian_participations %}
-                            <tr data-name="{{ participation.event.title|lower }}"
+                            <tr data-tournament="{{ participation.event.title|lower }}"
                                 data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
                                 data-location="{{ participation.event.location|default:''|lower }}"
                                 data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
                                 data-wins="{{ participation.wins }}"
-                                data-losses="{{ participation.losses }}">
+                                data-losses="{{ participation.losses }}"
+                                data-touches-scored="{{ participation.touches_scored }}"
+                                data-touches-received="{{ participation.touches_received }}">
                                 <td>{{ participation.event.title }}</td>
                                 <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
                                 <td>{{ participation.event.location|default:"-" }}</td>
@@ -147,10 +156,12 @@
                                 </td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
+                                <td>{{ participation.touches_scored }}</td>
+                                <td>{{ participation.touches_received }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="8" class="text-center">Zatím žádné interní turnaje</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -164,71 +175,6 @@
 <!-- Club Statistics Section -->
 {% if club %}
 <div id="clubStats" class="statistics-section" {% if initial_view != 'club' %}style="display: none;"{% endif %}>
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Členové klubu</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Muži (M)</h6>
-                            <ul>
-                                {% for fencer_profile in club_fencers_m %}
-                                <li>
-                                    {% if fencer_profile.user %}
-                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                                    {% else %}
-                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                                    {% endif %}
-                                </li>
-                                {% empty %}
-                                <li class="text-muted">Žádní muži</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Ženy (Ž)</h6>
-                            <ul>
-                                {% for fencer_profile in club_fencers_z %}
-                                <li>
-                                    {% if fencer_profile.user %}
-                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                                    {% else %}
-                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                                    {% endif %}
-                                </li>
-                                {% empty %}
-                                <li class="text-muted">Žádné ženy</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    {% if club_fencers_undefined %}
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6>Nedefinováno</h6>
-                            <ul>
-                                {% for fencer_profile in club_fencers_undefined %}
-                                <li>
-                                    {% if fencer_profile.user %}
-                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                        {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                                    {% else %}
-                                        {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                                    {% endif %}
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -336,34 +282,66 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Interní miniturnaje</h5>
+                <h5 class="card-title">Interní miniturnaje</h5>
                     <div class="table-responsive">
                         <table class="table table-striped" id="clubHumanitarianTable">
                             <thead>
                                 <tr>
-                                    <th class="sortable" data-sort="name" style="cursor: pointer;">
-                                        Název <span class="sort-indicator">↕</span>
+                                <th class="sortable" data-sort="fencer" style="cursor: pointer;">
+                                    Šermíř <span class="sort-indicator">↕</span>
                                     </th>
-                                    <th class="sortable" data-sort="date" style="cursor: pointer;">
-                                        Datum <span class="sort-indicator">↕</span>
+                                <th class="sortable" data-sort="tournament" style="cursor: pointer;">
+                                    Turnaj <span class="sort-indicator">↕</span>
                                     </th>
+                                <th class="sortable" data-sort="date" style="cursor: pointer;">
+                                    Datum <span class="sort-indicator">↕</span>
+                                </th>
                                     <th class="sortable" data-sort="location" style="cursor: pointer;">
                                         Místo <span class="sort-indicator">↕</span>
                                     </th>
+                                <th class="sortable" data-sort="position" style="cursor: pointer;">
+                                    Umístění <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="wins" style="cursor: pointer;">
+                                    Výhry <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="losses" style="cursor: pointer;">
+                                    Prohry <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="touches_scored" style="cursor: pointer;">
+                                    Zasazené zásahy <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="touches_received" style="cursor: pointer;">
+                                    Obdržené zásahy <span class="sort-indicator">↕</span>
+                                </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for tournament in internal_tournaments %}
-                                <tr data-name="{{ tournament.title|lower }}"
-                                    data-date="{{ tournament.start_date|date:'Y-m-d' }}"
-                                    data-location="{{ tournament.location|default:''|lower }}">
-                                    <td>{{ tournament.title }}</td>
-                                    <td>{{ tournament.start_date|date:"d.m.Y" }}</td>
-                                    <td>{{ tournament.location|default:"-" }}</td>
+                            {% for participation in club_humanitarian_participations %}
+                            <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
+                                data-tournament="{{ participation.event.title|lower }}"
+                                data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
+                                data-location="{{ participation.event.location|default:''|lower }}"
+                                data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                data-wins="{{ participation.wins }}"
+                                data-losses="{{ participation.losses }}"
+                                data-touches-scored="{{ participation.touches_scored }}"
+                                data-touches-received="{{ participation.touches_received }}">
+                                <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
+                                <td>{{ participation.event.title }}</td>
+                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
+                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
+                                    {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                </td>
+                                <td>{{ participation.wins }}</td>
+                                <td>{{ participation.losses }}</td>
+                                <td>{{ participation.touches_scored }}</td>
+                                <td>{{ participation.touches_received }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="3" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -846,7 +824,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function sortHumanitarianTable(column) {
             const tbody = individualHumanitarianTable.querySelector('tbody');
-            const dataRows = humanitarianRows.filter(row => !row.querySelector('td[colspan]') && row.hasAttribute('data-name'));
+            const dataRows = humanitarianRows.filter(row => !row.querySelector('td[colspan]') && row.hasAttribute('data-tournament'));
             
             if (humanitarianCurrentSort.column === column) {
                 humanitarianCurrentSort.direction = humanitarianCurrentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -859,9 +837,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 let aVal, bVal;
                 
                 switch(column) {
-                    case 'name':
-                        aVal = a.getAttribute('data-name') || '';
-                        bVal = b.getAttribute('data-name') || '';
+                    case 'tournament':
+                        aVal = a.getAttribute('data-tournament') || '';
+                        bVal = b.getAttribute('data-tournament') || '';
                         break;
                     case 'date':
                         aVal = a.getAttribute('data-date') || '';
@@ -882,6 +860,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     case 'losses':
                         aVal = parseInt(a.getAttribute('data-losses')) || 0;
                         bVal = parseInt(b.getAttribute('data-losses')) || 0;
+                        break;
+                    case 'touches_scored':
+                        aVal = parseInt(a.getAttribute('data-touches-scored')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-scored')) || 0;
+                        break;
+                    case 'touches_received':
+                        aVal = parseInt(a.getAttribute('data-touches-received')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-received')) || 0;
                         break;
                     default:
                         return 0;
@@ -938,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function sortClubHumanitarianTable(column) {
             const tbody = clubHumanitarianTable.querySelector('tbody');
-            const dataRows = clubHumanitarianRows.filter(row => !row.querySelector('td[colspan]') && row.hasAttribute('data-name'));
+            const dataRows = clubHumanitarianRows.filter(row => !row.querySelector('td[colspan]') && (row.hasAttribute('data-tournament') || row.hasAttribute('data-fencer')));
             
             if (clubHumanitarianCurrentSort.column === column) {
                 clubHumanitarianCurrentSort.direction = clubHumanitarianCurrentSort.direction === 'asc' ? 'desc' : 'asc';
@@ -951,9 +937,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 let aVal, bVal;
                 
                 switch(column) {
-                    case 'name':
-                        aVal = a.getAttribute('data-name') || '';
-                        bVal = b.getAttribute('data-name') || '';
+                    case 'fencer':
+                        aVal = a.getAttribute('data-fencer') || '';
+                        bVal = b.getAttribute('data-fencer') || '';
+                        break;
+                    case 'tournament':
+                        aVal = a.getAttribute('data-tournament') || '';
+                        bVal = b.getAttribute('data-tournament') || '';
                         break;
                     case 'date':
                         aVal = a.getAttribute('data-date') || '';
@@ -962,6 +952,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     case 'location':
                         aVal = a.getAttribute('data-location') || '';
                         bVal = b.getAttribute('data-location') || '';
+                        break;
+                    case 'position':
+                        aVal = parseInt(a.getAttribute('data-position')) || 999;
+                        bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'wins':
+                        aVal = parseInt(a.getAttribute('data-wins')) || 0;
+                        bVal = parseInt(b.getAttribute('data-wins')) || 0;
+                        break;
+                    case 'losses':
+                        aVal = parseInt(a.getAttribute('data-losses')) || 0;
+                        bVal = parseInt(b.getAttribute('data-losses')) || 0;
+                        break;
+                    case 'touches_scored':
+                        aVal = parseInt(a.getAttribute('data-touches-scored')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-scored')) || 0;
+                        break;
+                    case 'touches_received':
+                        aVal = parseInt(a.getAttribute('data-touches-received')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-received')) || 0;
                         break;
                     default:
                         return 0;

@@ -77,21 +77,33 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Název</th>
+                                <th>Šermíř</th>
+                                <th>Turnaj</th>
                                 <th>Datum</th>
                                 <th>Místo</th>
+                                <th>Umístění</th>
+                                <th>Výhry</th>
+                                <th>Prohry</th>
+                                <th>Zasazené zásahy</th>
+                                <th>Obdržené zásahy</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for tournament in internal_tournaments %}
+                            {% for participation in internal_participations %}
                             <tr>
-                                <td>{{ tournament.title }}</td>
-                                <td>{{ tournament.start_date|date:"d.m.Y" }}</td>
-                                <td>{{ tournament.location|default:"-" }}</td>
+                                <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
+                                <td>{{ participation.event.title }}</td>
+                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
+                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                <td>{{ participation.wins }}</td>
+                                <td>{{ participation.losses }}</td>
+                                <td>{{ participation.touches_scored }}</td>
+                                <td>{{ participation.touches_received }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -272,6 +272,8 @@ def about_me(request):
     if not profile:
         return redirect('match_profile')
     
+    view_param = request.GET.get('view', 'me')
+    
     tournament_participations = EventParticipation.objects.filter(
         fencer=profile,
         event__event_type=Event.EventType.TOURNAMENT
@@ -312,13 +314,20 @@ def about_me(request):
             'event_type': event.event_type,
             'type_label': meta['label'],
             'class_suffix': meta['class_suffix'],
-                'name': event.title,
+            'name': event.title,
             'date': event.start_date.date(),
-                'location': event.location,
+            'location': event.location,
             'is_participating': is_participating,
             'position': participation.position if participation else None,
-            })
+        })
     combined_items.sort(key=lambda x: x['date'], reverse=True)
+    
+    club_fencers_m = club_fencers_z = club_fencers_undefined = FencerProfile.objects.none()
+    if profile.club:
+        club_members = FencerProfile.objects.filter(club=profile.club).select_related('user')
+        club_fencers_m = club_members.filter(gender=FencerProfile.Gender.MALE).order_by('last_name', 'first_name')
+        club_fencers_z = club_members.filter(gender=FencerProfile.Gender.FEMALE).order_by('last_name', 'first_name')
+        club_fencers_undefined = club_members.filter(gender__isnull=True).order_by('last_name', 'first_name')
     
     context = {
         'profile': profile,
@@ -330,6 +339,10 @@ def about_me(request):
         'total_touches_scored': total_touches_scored,
         'total_touches_received': total_touches_received,
         'win_rate': round(win_rate, 1),
+        'club_fencers_m': club_fencers_m,
+        'club_fencers_z': club_fencers_z,
+        'club_fencers_undefined': club_fencers_undefined,
+        'initial_view': view_param,
     }
     return render(request, 'fencers/about_me.html', context)
 
@@ -355,7 +368,7 @@ def statistics_individual(request):
     club = None
     club_fencers = None
     club_participations = None
-    internal_events = None
+    club_humanitarian_participations = None
     
     # Get URL parameters
     view_param = request.GET.get('view', 'individual')  # 'individual' or 'club'
@@ -365,49 +378,39 @@ def statistics_individual(request):
         club = profile.club
         club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
         
-        # Split club fencers by gender
-        club_fencers_m = club_fencers.filter(gender=FencerProfile.Gender.MALE).order_by('last_name', 'first_name')
-        club_fencers_z = club_fencers.filter(gender=FencerProfile.Gender.FEMALE).order_by('last_name', 'first_name')
-        club_fencers_undefined = club_fencers.filter(gender__isnull=True).order_by('last_name', 'first_name')
-        
-        club_participations = EventParticipation.objects.filter(
+        club_participations_qs = EventParticipation.objects.filter(
             fencer__in=club_fencers
         ).select_related('fencer', 'fencer__user', 'event')
         
         # Apply tournament filter if provided
         if tournament_filter:
-            club_participations = club_participations.filter(event__title__icontains=tournament_filter)
+            club_participations_qs = club_participations_qs.filter(event__title__icontains=tournament_filter)
         
         # Apply gender filter if provided
         gender_filter = request.GET.get('gender', '').strip()
         if gender_filter:
             if gender_filter == 'M':
-                club_participations = club_participations.filter(event__gender=Event.Gender.MALE)
+                club_participations_qs = club_participations_qs.filter(event__gender=Event.Gender.MALE)
             elif gender_filter == 'Z':
-                club_participations = club_participations.filter(event__gender=Event.Gender.FEMALE)
+                club_participations_qs = club_participations_qs.filter(event__gender=Event.Gender.FEMALE)
             elif gender_filter == 'V':
-                club_participations = club_participations.filter(event__gender=Event.Gender.ALL)
+                club_participations_qs = club_participations_qs.filter(event__gender=Event.Gender.ALL)
             # If gender_filter is empty or invalid, show all
         
-        internal_events = Event.objects.filter(
-            event_type=Event.EventType.HUMANITARIAN
-        ).order_by('-start_date')
+        club_participations = club_participations_qs
+        club_humanitarian_participations = club_participations_qs.filter(
+            event__event_type=Event.EventType.HUMANITARIAN
+        )
     else:
-        club_fencers_m = None
-        club_fencers_z = None
-        club_fencers_undefined = None
         gender_filter = ''
+        club_humanitarian_participations = EventParticipation.objects.none()
     
     context = {
         'participations': individual_participations,
         'humanitarian_participations': humanitarian_participations,
         'club': club,
-        'club_fencers': club_fencers,
-        'club_fencers_m': club_fencers_m if profile.club else None,
-        'club_fencers_z': club_fencers_z if profile.club else None,
-        'club_fencers_undefined': club_fencers_undefined if profile.club else None,
         'club_participations': club_participations,
-        'internal_tournaments': internal_events,
+        'club_humanitarian_participations': club_humanitarian_participations,
         'initial_view': view_param,
         'initial_tournament_filter': tournament_filter,
         'initial_gender_filter': gender_filter if profile.club else '',
@@ -435,15 +438,16 @@ def statistics_club(request):
     if tournament_filter:
         participations = participations.filter(event__title__icontains=tournament_filter)
     
-    internal_events = Event.objects.filter(
-        event_type=Event.EventType.TOURNAMENT
-    ).order_by('-start_date')
+    internal_participations = EventParticipation.objects.filter(
+        fencer__in=club_fencers,
+        event__event_type=Event.EventType.HUMANITARIAN
+    ).select_related('fencer', 'fencer__user', 'event').order_by('-event__start_date')
     
     context = {
         'club': profile.club,
         'club_fencers': club_fencers,
         'participations': participations,
-        'internal_tournaments': internal_events,
+        'internal_participations': internal_participations,
         'tournament_filter': tournament_filter,
     }
     return render(request, 'fencers/statistics_club.html', context)

@@ -34,6 +34,7 @@ Funkce (jednotlivé stránky):
 
 TODO:
 
+
 sekce O mně změnit na Humanita - bude mít dvě podsekce resp Toggle - Já / Klub
  v já bude to co je teď o Mně, a vdle v Klub budou Členové Klubu, co jsou teď ve Statistikách 
 
@@ -42,7 +43,7 @@ likes - najedu nad srdíčko a vidím
 dodělat opravdové turnaje 2025 a 2024
 
 - pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,
-a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral)
+a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral
 - moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
 připravit všem profily, jen naskočit...
 

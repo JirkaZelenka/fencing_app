@@ -1,44 +1,103 @@
 {% extends 'base.html' %}
 
-{% block title %}O mně - Šermířská aplikace{% endblock %}
+{% block title %}Info - Šermířská aplikace{% endblock %}
 
 {% block content %}
-<h1>O mně</h1>
+<h1>Info</h1>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Profil</h5>
-                <p><strong>Jméno:</strong> {{ user.get_full_name|default:user.username }}</p>
-                <p><strong>Uživatelské jméno:</strong> {{ user.username }}</p>
-                {% if profile %}
-                    <p><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
-                    {% if profile.gender %}
-                        <p><strong>Pohlaví:</strong> {{ profile.get_gender_display }}</p>
+{% if profile.club %}
+<div class="mb-4">
+    <div class="btn-group" role="group" aria-label="Toggle info view">
+        <input type="radio" class="btn-check" name="infoToggle" id="infoMeToggle" autocomplete="off" {% if initial_view != 'club' %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="infoMeToggle">O mně</label>
+        
+        <input type="radio" class="btn-check" name="infoToggle" id="infoClubToggle" autocomplete="off" {% if initial_view == 'club' %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="infoClubToggle">Klub</label>
+    </div>
+</div>
+{% endif %}
+
+<div id="infoPersonal" class="info-section" {% if initial_view == 'club' %}style="display: none;"{% endif %}>
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Profil</h5>
+                    <p><strong>Jméno:</strong> {{ user.get_full_name|default:user.username }}</p>
+                    <p><strong>Uživatelské jméno:</strong> {{ user.username }}</p>
+                    {% if profile %}
+                        <p><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
+                        {% if profile.gender %}
+                            <p><strong>Pohlaví:</strong> {{ profile.get_gender_display }}</p>
+                        {% endif %}
+                        {% if profile.phone %}
+                            <p><strong>Telefon:</strong> {{ profile.phone }}</p>
+                        {% endif %}
                     {% endif %}
-                    {% if profile.phone %}
-                        <p><strong>Telefon:</strong> {{ profile.phone }}</p>
-                    {% endif %}
-                {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Základní statistika</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Celkem turnajů:</strong> {{ total_tournaments }}</p>
+                            <p><strong>Výhry:</strong> {{ total_wins }}</p>
+                            <p><strong>Prohry:</strong> {{ total_losses }}</p>
+                            <p><strong>Úspěšnost:</strong> {{ win_rate }}%</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Zasazené zásahy:</strong> {{ total_touches_scored }}</p>
+                            <p><strong>Obdržené zásahy:</strong> {{ total_touches_received }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Základní statistika</h5>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p><strong>Celkem turnajů:</strong> {{ total_tournaments }}</p>
-                        <p><strong>Výhry:</strong> {{ total_wins }}</p>
-                        <p><strong>Prohry:</strong> {{ total_losses }}</p>
-                        <p><strong>Úspěšnost:</strong> {{ win_rate }}%</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong>Zasazené zásahy:</strong> {{ total_touches_scored }}</p>
-                        <p><strong>Obdržené zásahy:</strong> {{ total_touches_received }}</p>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Účast na turnajích a akcích</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Turnaj/Akce</th>
+                                    <th>Datum</th>
+                                    <th>Umístění</th>
+                                    <th>Účast</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in combined_items %}
+                                <tr>
+                                    <td>
+                                        <span class="badge event-type-badge {{ item.class_suffix }} me-2">{{ item.type_label }}</span>
+                                        {{ item.name }}
+                                    </td>
+                                    <td>{{ item.date }}</td>
+                                    <td>{% if item.position %}{{ item.position }}. místo{% else %}-{% endif %}</td>
+                                    <td>
+                                        {% if item.is_participating %}
+                                            <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Zatím žádné turnaje ani akce</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -46,49 +105,104 @@
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Účast na turnajích a akcích</h5>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Turnaj/Akce</th>
-                                <th>Datum</th>
-                                <th>Umístění</th>
-                                <th>Účast</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in combined_items %}
-                            <tr>
-                                <td>
-                                    <span class="badge event-type-badge {{ item.class_suffix }} me-2">{{ item.type_label }}</span>
-                                    {{ item.name }}
-                                </td>
-                                <td>{{ item.date }}</td>
-                                <td>{% if item.position %}{{ item.position }}. místo{% else %}-{% endif %}</td>
-                                <td>
-                                    {% if item.is_participating %}
-                                        <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">Zatím žádné turnaje ani akce</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+{% if profile.club %}
+<div id="infoClubSection" class="info-section" {% if initial_view != 'club' %}style="display: none;"{% endif %}>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Členové klubu</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Muži (M)</h6>
+                    <ul>
+                        {% for fencer_profile in club_fencers_m %}
+                        <li>
+                            {% if fencer_profile.user %}
+                                <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                            {% else %}
+                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                            {% endif %}
+                        </li>
+                        {% empty %}
+                        <li class="text-muted">Žádní muži</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Ženy (Ž)</h6>
+                    <ul>
+                        {% for fencer_profile in club_fencers_z %}
+                        <li>
+                            {% if fencer_profile.user %}
+                                <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                            {% else %}
+                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                            {% endif %}
+                        </li>
+                        {% empty %}
+                        <li class="text-muted">Žádné ženy</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
+            {% if club_fencers_undefined %}
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Nedefinováno</h6>
+                    <ul>
+                        {% for fencer_profile in club_fencers_undefined %}
+                        <li>
+                            {% if fencer_profile.user %}
+                                <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                            {% else %}
+                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const infoMeToggle = document.getElementById('infoMeToggle');
+    const infoClubToggle = document.getElementById('infoClubToggle');
+    const infoPersonal = document.getElementById('infoPersonal');
+    const infoClubSection = document.getElementById('infoClubSection');
+    
+    if (infoMeToggle && infoClubToggle && infoClubSection) {
+        infoMeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                infoPersonal.style.display = 'block';
+                infoClubSection.style.display = 'none';
+            }
+        });
+        
+        infoClubToggle.addEventListener('change', function() {
+            if (this.checked) {
+                infoClubSection.style.display = 'block';
+                infoPersonal.style.display = 'none';
+            }
+        });
+    }
+    
+    {% if initial_view == 'club' %}
+    if (infoClubToggle && infoClubSection) {
+        infoClubToggle.checked = true;
+        infoClubSection.style.display = 'block';
+        if (infoPersonal) infoPersonal.style.display = 'none';
+    }
+    {% endif %}
+});
+</script>
 {% endblock %}
 

@@ -29,6 +29,7 @@ urlpatterns = [
     path('calendar/', views.calendar_events, name='calendar_events'),
     path('calendar/<int:event_id>/reaction/', views.event_reaction, name='event_reaction'),
     path('payment/', views.payment_status, name='payment_status'),
+    path('payment/notify/', views.notify_payment, name='notify_payment'),
     path('guides/glossary/', views.guides_glossary, name='guides_glossary'),
     path('guides/videos/', views.guides_videos, name='guides_videos'),
     path('guides/rules/', views.guides_rules, name='guides_rules'),

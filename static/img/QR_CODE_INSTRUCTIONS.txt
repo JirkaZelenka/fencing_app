@@ -1,0 +1,10 @@
+INSTRUCTIONS FOR QR CODE IMAGE:
+
+1. Save your QR code image as: payment_qr.png
+2. Place it in this directory: static/img/
+3. The full path should be: static/img/payment_qr.png
+4. The image will automatically display on the payment page
+
+Supported formats: PNG, JPG, JPEG
+Recommended size: 300x300 pixels or larger (will be scaled down)
+

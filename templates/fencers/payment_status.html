@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Stav placení - Šermířská aplikace{% endblock %}
 
@@ -19,22 +20,27 @@
                 {% else %}
                     <div class="alert alert-warning">
                         <h4>⚠️ Příspěvek není zaplacen!</h4>
-                        {% if payment_status.amount %}
-                            <p>Částka: {{ payment_status.amount }} Kč</p>
-                        {% endif %}
-                        {% if payment_reference %}
-                            <p><strong>Variabilní symbol:</strong> {{ payment_reference }}</p>
-                        {% endif %}
-                        {% if payment_deadline %}
-                            <p><strong>Termín platby:</strong> {{ payment_deadline|date:"d.m.Y" }}</p>
-                        {% endif %}
+                        <p><strong>Částka:</strong> {{ payment_status.amount|default:"1600" }} CZK</p>
+                        <p><strong>Číslo účtu:</strong> {{ account_number }}</p>
+                        <p><strong>Variabilní symbol:</strong> {{ payment_reference }}</p>
+                        <p><strong>Zpráva pro příjemce:</strong> příspěvky</p>
                     </div>
                 {% endif %}
                 
-                {% if payment_status.qr_code %}
+                {% if not payment_status.is_paid %}
                 <div class="mt-4">
                     <h5>QR kód pro platbu</h5>
-                    <img src="{{ payment_status.qr_code.url }}" alt="QR kód" class="img-fluid" style="max-width: 300px;">
+                    {% if payment_status.qr_code %}
+                        <img src="{{ payment_status.qr_code.url }}" alt="QR kód" class="img-fluid" style="max-width: 300px;">
+                    {% else %}
+                        <img src="{% static 'img/payment_qr.png' %}" alt="QR kód" class="img-fluid" style="max-width: 300px;">
+                    {% endif %}
+                </div>
+                
+                <div class="mt-4">
+                    <button type="button" class="btn btn-primary" id="notifyPaymentBtn">
+                        Dát vědět že jsem zaplatil
+                    </button>
                 </div>
                 {% endif %}
                 
@@ -48,5 +54,46 @@
         </div>
     </div>
 </div>
+
+{% if not payment_status.is_paid %}
+<script>
+document.getElementById('notifyPaymentBtn').addEventListener('click', function() {
+    const btn = this;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Odesílám...';
+    
+    fetch('{% url "notify_payment" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            btn.textContent = 'Odesláno!';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            // Reload page after 1 second to update the dot
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            alert('Chyba: ' + (data.message || 'Nepodařilo se odeslat oznámení'));
+        }
+    })
+    .catch(error => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        alert('Chyba při odesílání oznámení');
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
 

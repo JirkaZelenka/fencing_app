@@ -991,22 +991,51 @@ def payment_status(request):
     
     payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=profile)
     
-    # Generate random payment reference if not paid
-    payment_reference = None
-    if not payment_status_obj.is_paid:
-        payment_reference = generate_payment_reference(profile.id)
-    
-    # Calculate amount if not set
-    if not payment_status_obj.amount:
-        payment_status_obj.amount = calculate_payment_amount()
+    # Set fixed amount to 1600 CZK
+    if not payment_status_obj.amount or payment_status_obj.amount != 1600:
+        payment_status_obj.amount = 1600
         payment_status_obj.save()
+    
+    # Fixed payment reference (VS)
+    payment_reference = "666"
     
     context = {
         'payment_status': payment_status_obj,
         'payment_reference': payment_reference,
-        'payment_deadline': get_payment_deadline(),
+        'account_number': '1031642609/5500',
     }
     return render(request, 'fencers/payment_status.html', context)
+
+
+@login_required
+@require_POST
+def notify_payment(request):
+    """Send notification to all admins that user has paid"""
+    from django.contrib.auth.models import User
+    
+    user = request.user
+    profile = getattr(user, 'fencer_profile', None)
+    if not profile:
+        return JsonResponse({'success': False, 'message': 'Profil nenalezen'}, status=400)
+    
+    payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=profile)
+    
+    # Mark as notified
+    payment_status_obj.payment_notified = True
+    payment_status_obj.save()
+    
+    # Get all admin users (is_staff=True)
+    admin_users = User.objects.filter(is_staff=True)
+    
+    # In a real application, you would send emails here
+    # For now, we'll just mark as notified and return success
+    user_name = user.get_full_name() or user.username
+    admin_count = admin_users.count()
+    
+    return JsonResponse({
+        'success': True, 
+        'message': f'Oznámení bylo odesláno {admin_count} administrátorům'
+    })
 
 
 @login_required

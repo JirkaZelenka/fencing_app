@@ -171,10 +171,11 @@ class EventReactionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentStatus)
 class PaymentStatusAdmin(admin.ModelAdmin):
-    list_display = ['get_fencer_name', 'is_paid', 'payment_date', 'amount']
-    list_filter = ['is_paid', 'payment_date']
+    list_display = ['get_fencer_name', 'is_paid', 'payment_notified', 'payment_date', 'amount']
+    list_filter = ['is_paid', 'payment_notified', 'payment_date']
     search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name']
     autocomplete_fields = ['fencer']
+    fields = ('fencer', 'is_paid', 'payment_date', 'amount', 'payment_notified', 'qr_code', 'payment_info')
     
     def get_fencer_name(self, obj):
         if obj.fencer.user:

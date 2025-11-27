@@ -233,6 +233,7 @@ class PaymentStatus(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Částka")
     qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True, verbose_name="QR kód")
     payment_info = models.TextField(blank=True, verbose_name="Informace k platbě")
+    payment_notified = models.BooleanField(default=False, verbose_name="Upozornění odesláno")
     
     class Meta:
         verbose_name = "Stav platby"

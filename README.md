@@ -34,8 +34,6 @@ Funkce (jednotlivé stránky):
 
 TODO:
 
-eventy - přidat fajfku pokud jsem tam byl, zvýraznit fotky jen pokud tam nějaké jsou
-
 - fixnout Red dot pro nezaplacené poplatky + qR kod (kody) + možnost notifikovat admina když už jsem zaplatil
 
 - pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,

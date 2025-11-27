@@ -41,17 +41,27 @@
                         <a class="nav-link" href="{% url 'calendar_events' %}">Kalendář akcí</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'payment_status' %}">
-                            Platby
-                            {% if user.is_authenticated and user.payment_status %}
-                                {% if not user.payment_status.is_paid %}
-                                    <span class="payment-warning-dot"></span>
-                                {% endif %}
-                            {% endif %}
-                        </a>
+                        <a class="nav-link" href="{% url 'equipment' %}">WIKI</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'equipment' %}">WIKI</a>
+                        <a class="nav-link" href="{% url 'payment_status' %}">
+                            Platby
+                            {% if user.is_authenticated and user.fencer_profile %}
+                                {% with payment_status=user.fencer_profile.payment_status %}
+                                    {% if payment_status %}
+                                        {% if payment_status.is_paid %}
+                                            <span class="payment-status-dot payment-dot-green"></span>
+                                        {% elif payment_status.payment_notified %}
+                                            <span class="payment-status-dot payment-dot-yellow"></span>
+                                        {% else %}
+                                            <span class="payment-status-dot payment-dot-red"></span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="payment-status-dot payment-dot-red"></span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Přiřazení profilu - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Přiřaďte se k profilu</h1>
+        <p class="lead">Vyberte prosím profil, který odpovídá vaší osobě. Profily byly předpřipraveny s vašimi osobními údaji.</p>
+        
+        {% if unmatched_profiles %}
+            <div class="row mt-4">
+                {% for profile in unmatched_profiles %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    {% if profile.first_name or profile.last_name %}
+                                        {{ profile.first_name }} {{ profile.last_name }}
+                                    {% else %}
+                                        Profil #{{ profile.id }}
+                                    {% endif %}
+                                </h5>
+                                {% if profile.club %}
+                                    <p class="card-text"><strong>Klub:</strong> {{ profile.club.name }}</p>
+                                {% endif %}
+                                {% if profile.email %}
+                                    <p class="card-text"><small class="text-muted">Email: {{ profile.email }}</small></p>
+                                {% endif %}
+                                {% if profile.phone %}
+                                    <p class="card-text"><small class="text-muted">Telefon: {{ profile.phone }}</small></p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                                    <button type="submit" class="btn btn-primary w-100">Vybrat tento profil</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning mt-4">
+                <h4>Žádné dostupné profily</h4>
+                <p>Momentálně nejsou k dispozici žádné nepřiřazené profily. Kontaktujte prosím administrátora.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

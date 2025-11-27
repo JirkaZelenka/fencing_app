@@ -15,12 +15,19 @@ class Club(models.Model):
 
 
 class FencerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fencer_profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fencer_profile', null=True, blank=True, verbose_name="Uživatel")
     club = models.ForeignKey(Club, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Klub")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Telefon")
+    # Optional fields to help identify the profile before user matching
+    first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
+    last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
+    email = models.EmailField(blank=True, verbose_name="Email")
     
     def __str__(self):
-        return f"{self.user.get_full_name() or self.user.username} ({self.club})"
+        if self.user:
+            return f"{self.user.get_full_name() or self.user.username} ({self.club})"
+        name = f"{self.first_name} {self.last_name}".strip() or "Nepřiřazený profil"
+        return f"{name} ({self.club})"
     
     class Meta:
         verbose_name = "Profil šermíře"
@@ -57,7 +64,7 @@ class Event(models.Model):
 
 
 class EventParticipation(models.Model):
-    fencer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_participations', verbose_name="Šermíř")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='event_participations', verbose_name="Šermíř")
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='participations', verbose_name="Akce")
     position = models.IntegerField(null=True, blank=True, verbose_name="Umístění")
     wins = models.IntegerField(default=0, verbose_name="Výhry")
@@ -73,7 +80,7 @@ class EventParticipation(models.Model):
 
 
 class TrainingNote(models.Model):
-    fencer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='training_notes', verbose_name="Šermíř")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='training_notes', verbose_name="Šermíř")
     date = models.DateField(verbose_name="Datum")
     notes = models.TextField(verbose_name="Poznámky")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -198,7 +205,7 @@ class EventReaction(models.Model):
 
 
 class PaymentStatus(models.Model):
-    fencer = models.OneToOneField(User, on_delete=models.CASCADE, related_name='payment_status', verbose_name="Šermíř")
+    fencer = models.OneToOneField(FencerProfile, on_delete=models.CASCADE, related_name='payment_status', verbose_name="Šermíř")
     is_paid = models.BooleanField(default=False, verbose_name="Zaplaceno")
     payment_date = models.DateField(null=True, blank=True, verbose_name="Datum platby")
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Částka")
@@ -257,7 +264,7 @@ class EquipmentItem(models.Model):
 
 
 class UserEquipment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='equipment', verbose_name="Uživatel")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='equipment', verbose_name="Šermíř")
     equipment = models.ForeignKey(EquipmentItem, on_delete=models.CASCADE, verbose_name="Vybavení")
     is_owned = models.BooleanField(default=False, verbose_name="Vlastním")
     purchase_date = models.DateField(null=True, blank=True, verbose_name="Datum nákupu")
@@ -265,5 +272,5 @@ class UserEquipment(models.Model):
     class Meta:
         verbose_name = "Vybavení uživatele"
         verbose_name_plural = "Vybavení uživatelů"
-        unique_together = ['user', 'equipment']
+        unique_together = ['fencer', 'equipment']
 

@@ -5,6 +5,9 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
+    path('match-profile/', views.match_profile, name='match_profile'),
+    path('unpair-profile/', views.unpair_profile, name='unpair_profile'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
     # Main pages

@@ -47,7 +47,7 @@
                         <tbody>
                             {% for participation in participations %}
                             <tr>
-                                <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
+                                <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                 <td>{{ participation.event.title }}</td>
                                 <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
                                 <td>{{ participation.event.location|default:"-" }}</td>

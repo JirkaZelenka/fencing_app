@@ -33,10 +33,18 @@ Funkce (jednotlivé stránky):
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
 TODO:
-- O mně - Účast na turnajích oříznout na menší tabulku, bez skore, max pořadí, ale ukázat i šedivě turnaje co byly a já tam nebyl
-- O mně - Účast na turnajích - sám si zakliknu, kde jsem byl podle seznamu, a pořadí
+- pairing účtu - přidat unpairing
+- Statistiky - členové klubu - rozdělit muži ženy, abecedně příjmení jméno, fajfka u těch co se už napárovali.
+
+Dále: rozdělit turnaje na mužské a ženské ... aby ty pozice dávaly smysl..
+
+dodělat opravdové turnaje 2025 a 2024
+
+připravit všem profily, jen naskočit...
+
 - Statistiky - přidat totaly nebo průměry, a filtry
-- počítat i body, společná tabulka?
-- Statistiky - já vs klub - toggle button
-- Statistiky - ...
-- interní miniturnaje - ukazovat stejná data jko u turnajů
+
+eventy - přidat fajfku pokud jsem tam byl, zvýraznit fotky jen pokud tam nějaké jsou
+
+vybavení -> změnit na WIKI, doplnit materiály a URLs, fotka hrotu atd
+později linky na výbavu. Seznam dobrých značek...

@@ -171,7 +171,7 @@
                     <h5 class="card-title">Členové klubu</h5>
                     <ul>
                         {% for fencer_profile in club_fencers %}
-                        <li>{{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}</li>
+                        <li>{% if fencer_profile.user %}{{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}{% else %}{{ fencer_profile.first_name }} {{ fencer_profile.last_name }}{% endif %}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -240,7 +240,7 @@
                             </thead>
                             <tbody>
                                 {% for participation in club_participations %}
-                                <tr data-fencer="{{ participation.fencer.get_full_name|default:participation.fencer.username|lower }}"
+                                <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
                                     data-tournament="{{ participation.event.title|lower }}" 
                                     data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
                                     data-location="{{ participation.event.location|default:''|lower }}"
@@ -249,7 +249,7 @@
                                     data-losses="{{ participation.losses }}"
                                     data-touches-scored="{{ participation.touches_scored }}"
                                     data-touches-received="{{ participation.touches_received }}">
-                                    <td>{{ participation.fencer.get_full_name|default:participation.fencer.username }}</td>
+                                    <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                     <td>{{ participation.event.title }}</td>
                                     <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
                                     <td>{{ participation.event.location|default:"-" }}</td>

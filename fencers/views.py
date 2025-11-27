@@ -18,7 +18,7 @@ from .models import (
     PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
     UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike
 )
-from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm
+from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm, RegistrationForm
 
 
 # Slots shown around the figurine in the equipment view.
@@ -167,6 +167,9 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            # Check if user needs to match a profile
+            if not hasattr(user, 'fencer_profile') or user.fencer_profile is None:
+                return redirect('match_profile')
             return redirect('home')
         else:
             messages.error(request, 'Neplatné přihlašovací údaje.')
@@ -174,8 +177,83 @@ def login_view(request):
     return render(request, 'fencers/login.html')
 
 
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Účet byl úspěšně vytvořen! Nyní se prosím přiřaďte k jednomu z předpřipravených profilů.')
+            return redirect('match_profile')
+    else:
+        form = RegistrationForm()
+    
+    return render(request, 'fencers/register.html', {'form': form})
+
+
+@login_required
+def match_profile(request):
+    """Allow user to match themselves to a predefined FencerProfile"""
+    # Check if user already has a profile
+    if hasattr(request.user, 'fencer_profile') and request.user.fencer_profile:
+        messages.info(request, 'Již máte přiřazený profil.')
+        return redirect('home')
+    
+    # Get all unmatched profiles (profiles without a user)
+    unmatched_profiles = FencerProfile.objects.filter(user__isnull=True).select_related('club').order_by('last_name', 'first_name')
+    
+    if request.method == 'POST':
+        profile_id = request.POST.get('profile_id')
+        try:
+            profile = FencerProfile.objects.get(id=profile_id, user__isnull=True)
+            # Link the user to this profile
+            profile.user = request.user
+            profile.save()
+            
+            # Update user's name if profile has name info
+            if profile.first_name and not request.user.first_name:
+                request.user.first_name = profile.first_name
+            if profile.last_name and not request.user.last_name:
+                request.user.last_name = profile.last_name
+            if profile.email and not request.user.email:
+                request.user.email = profile.email
+            request.user.save()
+            
+            messages.success(request, f'Profil byl úspěšně přiřazen! Vítejte, {request.user.get_full_name() or request.user.username}.')
+            return redirect('home')
+        except FencerProfile.DoesNotExist:
+            messages.error(request, 'Vybraný profil neexistuje nebo již byl přiřazen.')
+    
+    context = {
+        'unmatched_profiles': unmatched_profiles,
+    }
+    return render(request, 'fencers/match_profile.html', context)
+
+
+@login_required
+@require_POST
+def unpair_profile(request):
+    """Allow user to unpair themselves from their FencerProfile"""
+    if not hasattr(request.user, 'fencer_profile') or request.user.fencer_profile is None:
+        messages.error(request, 'Nemáte přiřazený profil.')
+        return redirect('home')
+    
+    profile = request.user.fencer_profile
+    profile.user = None
+    profile.save()
+    
+    messages.success(request, 'Profil byl úspěšně odpojen. Můžete se znovu přiřadit k jinému profilu.')
+    return redirect('match_profile')
+
+
 @login_required
 def home(request):
+    # Redirect to profile matching if user doesn't have a profile
+    if not hasattr(request.user, 'fencer_profile') or request.user.fencer_profile is None:
+        return redirect('match_profile')
     return redirect('about_me')
 
 
@@ -183,8 +261,11 @@ def home(request):
 def about_me(request):
     user = request.user
     profile = getattr(user, 'fencer_profile', None)
+    if not profile:
+        return redirect('match_profile')
+    
     tournament_participations = EventParticipation.objects.filter(
-        fencer=user,
+        fencer=profile,
         event__event_type=Event.EventType.TOURNAMENT
     ).select_related('event')
     
@@ -198,7 +279,7 @@ def about_me(request):
     
     all_events = Event.objects.all().order_by('-start_date')
     participation_lookup = {
-        p.event_id: p for p in EventParticipation.objects.filter(fencer=user).select_related('event')
+        p.event_id: p for p in EventParticipation.objects.filter(fencer=profile).select_related('event')
     }
     event_reactions = set(
         EventReaction.objects.filter(user=user, will_attend=True).values_list('event_id', flat=True)
@@ -239,15 +320,20 @@ def about_me(request):
 def statistics_individual(request):
     user = request.user
     
-    individual_participations = EventParticipation.objects.filter(fencer=user).select_related('event')
+    # Redirect to profile matching if user doesn't have a profile
+    if not hasattr(user, 'fencer_profile') or user.fencer_profile is None:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
+    profile = user.fencer_profile
+    individual_participations = EventParticipation.objects.filter(fencer=profile).select_related('event')
     
     # Get user's participations in humanitarian tournaments
     humanitarian_participations = EventParticipation.objects.filter(
-        fencer=user,
+        fencer=profile,
         event__event_type=Event.EventType.HUMANITARIAN
     ).select_related('event').order_by('-event__start_date')
     
-    profile = getattr(user, 'fencer_profile', None)
     club = None
     club_fencers = None
     club_participations = None
@@ -257,13 +343,12 @@ def statistics_individual(request):
     view_param = request.GET.get('view', 'individual')  # 'individual' or 'club'
     tournament_filter = request.GET.get('tournament', '').strip()
     
-    if profile and profile.club:
+    if profile.club:
         club = profile.club
         club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
-        fencer_ids = [fp.user.id for fp in club_fencers]
         club_participations = EventParticipation.objects.filter(
-            fencer_id__in=fencer_ids
-        ).select_related('fencer', 'event')
+            fencer__in=club_fencers
+        ).select_related('fencer', 'fencer__user', 'event')
         
         # Apply tournament filter if provided
         if tournament_filter:
@@ -296,11 +381,10 @@ def statistics_club(request):
         return redirect('about_me')
     
     club_fencers = FencerProfile.objects.filter(club=profile.club).select_related('user')
-    fencer_ids = [fp.user.id for fp in club_fencers]
     
     participations = EventParticipation.objects.filter(
-        fencer_id__in=fencer_ids
-    ).select_related('fencer', 'event')
+        fencer__in=club_fencers
+    ).select_related('fencer', 'fencer__user', 'event')
     
     # Filter by tournament name if provided
     tournament_filter = request.GET.get('tournament', '').strip()
@@ -324,13 +408,18 @@ def statistics_club(request):
 @login_required
 def training_notes(request):
     user = request.user
-    notes = TrainingNote.objects.filter(fencer=user).order_by('-date')
+    profile = getattr(user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
+    notes = TrainingNote.objects.filter(fencer=profile).order_by('-date')
     
     if request.method == 'POST':
         form = TrainingNoteForm(request.POST)
         if form.is_valid():
             note = form.save(commit=False)
-            note.fencer = user
+            note.fencer = profile
             note.save()
             messages.success(request, 'Poznámka byla uložena.')
             return redirect('training_notes')
@@ -721,13 +810,13 @@ def validate_payment_reference(reference):
     return bool(re.match(pattern, reference))
 
 
-def process_payment_simulation(user, amount, reference):
+def process_payment_simulation(profile, amount, reference):
     """Simulate payment processing (random success/failure for demo)"""
     # Random simulation - 80% success rate
     success = random.random() > 0.2
     
     if success:
-        payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=user)
+        payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=profile)
         payment_status_obj.is_paid = True
         payment_status_obj.payment_date = date.today()
         payment_status_obj.amount = amount
@@ -744,12 +833,18 @@ def get_payment_deadline():
 
 @login_required
 def payment_status(request):
-    payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=request.user)
+    user = request.user
+    profile = getattr(user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
+    payment_status_obj, created = PaymentStatus.objects.get_or_create(fencer=profile)
     
     # Generate random payment reference if not paid
     payment_reference = None
     if not payment_status_obj.is_paid:
-        payment_reference = generate_payment_reference(request.user.id)
+        payment_reference = generate_payment_reference(profile.id)
     
     # Calculate amount if not set
     if not payment_status_obj.amount:
@@ -800,10 +895,15 @@ def guides_equipment_assembly(request):
 @login_required
 def equipment(request):
     user = request.user
+    profile = getattr(user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
     equipment_items = list(EquipmentItem.objects.all().order_by('category', 'name'))
     
     # Get user's equipment status and attach to items
-    user_equipment = {ue.equipment_id: ue for ue in UserEquipment.objects.filter(user=user)}
+    user_equipment = {ue.equipment_id: ue for ue in UserEquipment.objects.filter(fencer=profile)}
     for item in equipment_items:
         item.user_equipment = user_equipment.get(item.id)
     
@@ -813,7 +913,7 @@ def equipment(request):
         
         equipment_item = get_object_or_404(EquipmentItem, id=equipment_id)
         user_eq, created = UserEquipment.objects.get_or_create(
-            user=user,
+            fencer=profile,
             equipment=equipment_item
         )
         user_eq.is_owned = is_owned

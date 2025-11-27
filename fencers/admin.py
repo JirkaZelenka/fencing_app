@@ -36,15 +36,41 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(FencerProfile)
 class FencerProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'club', 'phone', 'get_user_email']
-    list_filter = ['club']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email', 'phone']
+    list_display = ['get_display_name', 'user', 'club', 'phone', 'get_user_email', 'is_matched']
+    list_filter = ['club', 'user']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email', 'first_name', 'last_name', 'email', 'phone']
     autocomplete_fields = ['user']
-    fields = ('user', 'club', 'phone')
+    fields = ('user', 'club', 'phone', 'first_name', 'last_name', 'email')
+    actions = ['unpair_selected_profiles']
+    
+    def unpair_selected_profiles(self, request, queryset):
+        """Admin action to unpair selected profiles from their users"""
+        count = 0
+        for profile in queryset:
+            if profile.user:
+                profile.user = None
+                profile.save()
+                count += 1
+        self.message_user(request, f'{count} profilů bylo odpojeno od uživatelů.')
+    unpair_selected_profiles.short_description = 'Odpojit vybrané profily od uživatelů'
+    
+    def get_display_name(self, obj):
+        if obj.user:
+            return obj.user.get_full_name() or obj.user.username
+        name = f"{obj.first_name} {obj.last_name}".strip()
+        return name or f"Profil #{obj.id}"
+    get_display_name.short_description = 'Jméno'
     
     def get_user_email(self, obj):
-        return obj.user.email
+        if obj.user:
+            return obj.user.email
+        return obj.email or '-'
     get_user_email.short_description = 'Email'
+    
+    def is_matched(self, obj):
+        return bool(obj.user)
+    is_matched.short_description = 'Přiřazeno'
+    is_matched.boolean = True
 
 
 @admin.register(Club)
@@ -59,16 +85,30 @@ class ClubAdmin(admin.ModelAdmin):
 
 @admin.register(EventParticipation)
 class EventParticipationAdmin(admin.ModelAdmin):
-    list_display = ['fencer', 'event', 'position', 'wins', 'losses']
+    list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses']
     list_filter = ['event', 'event__start_date']
-    search_fields = ['fencer__username', 'fencer__first_name', 'fencer__last_name', 'event__title']
+    search_fields = ['fencer__user__username', 'fencer__user__first_name', 'fencer__user__last_name', 'fencer__first_name', 'fencer__last_name', 'event__title']
+    autocomplete_fields = ['fencer']
+    
+    def get_fencer_name(self, obj):
+        if obj.fencer.user:
+            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+        return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
+    get_fencer_name.short_description = 'Šermíř'
 
 
 @admin.register(TrainingNote)
 class TrainingNoteAdmin(admin.ModelAdmin):
-    list_display = ['fencer', 'date', 'created_at']
+    list_display = ['get_fencer_name', 'date', 'created_at']
     list_filter = ['date', 'created_at']
-    search_fields = ['fencer__username', 'notes']
+    search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name', 'notes']
+    autocomplete_fields = ['fencer']
+    
+    def get_fencer_name(self, obj):
+        if obj.fencer.user:
+            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+        return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
+    get_fencer_name.short_description = 'Šermíř'
 
 
 @admin.register(CircuitTraining)
@@ -131,9 +171,16 @@ class EventReactionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentStatus)
 class PaymentStatusAdmin(admin.ModelAdmin):
-    list_display = ['fencer', 'is_paid', 'payment_date', 'amount']
+    list_display = ['get_fencer_name', 'is_paid', 'payment_date', 'amount']
     list_filter = ['is_paid', 'payment_date']
-    search_fields = ['fencer__username']
+    search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name']
+    autocomplete_fields = ['fencer']
+    
+    def get_fencer_name(self, obj):
+        if obj.fencer.user:
+            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+        return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
+    get_fencer_name.short_description = 'Šermíř'
 
 
 @admin.register(GlossaryTerm)
@@ -164,6 +211,13 @@ class EquipmentItemAdmin(admin.ModelAdmin):
 
 @admin.register(UserEquipment)
 class UserEquipmentAdmin(admin.ModelAdmin):
-    list_display = ['user', 'equipment', 'is_owned', 'purchase_date']
+    list_display = ['get_fencer_name', 'equipment', 'is_owned', 'purchase_date']
     list_filter = ['is_owned', 'purchase_date']
-    search_fields = ['user__username', 'equipment__name']
+    search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name', 'equipment__name']
+    autocomplete_fields = ['fencer', 'equipment']
+    
+    def get_fencer_name(self, obj):
+        if obj.fencer.user:
+            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+        return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
+    get_fencer_name.short_description = 'Šermíř'

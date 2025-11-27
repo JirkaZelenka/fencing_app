@@ -78,6 +78,14 @@ EQUIPMENT_LOADOUT_SLOTS = [
         "fallback_description": "Vysoké podkolenky a šermířské boty s boční výztuží pro výpady.",
     },
     {
+        "id": "tools",
+        "label": "Nářadí",
+        "icon": "tool",
+        "keywords": ["nářadí", "tools", "tool"],
+        "position": "bottom",
+        "fallback_description": "Nářadí pro údržbu a opravy zbraně.",
+    },
+    {
         "id": "weapon",
         "label": "Kord",
         "icon": "sword",

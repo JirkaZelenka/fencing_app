@@ -33,7 +33,6 @@ Funkce (jednotlivé stránky):
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
 TODO:
-- pairing účtu - přidat unpairing
 - Statistiky - členové klubu - rozdělit muži ženy, abecedně příjmení jméno, fajfka u těch co se už napárovali.
 
 Dále: rozdělit turnaje na mužské a ženské ... aby ty pozice dávaly smysl..
@@ -48,3 +47,7 @@ eventy - přidat fajfku pokud jsem tam byl, zvýraznit fotky jen pokud tam něja
 
 vybavení -> změnit na WIKI, doplnit materiály a URLs, fotka hrotu atd
 později linky na výbavu. Seznam dobrých značek...
+
+platby - opravdové qr kod, a nějaký systém.
+
+přidat kvalitní fotky všeho

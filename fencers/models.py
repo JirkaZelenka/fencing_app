@@ -297,3 +297,34 @@ class UserEquipment(models.Model):
         verbose_name_plural = "Vybavení uživatelů"
         unique_together = ['fencer', 'equipment']
 
+
+class News(models.Model):
+    title = models.CharField(max_length=200, verbose_name="Nadpis")
+    text = models.TextField(verbose_name="Text")
+    date = models.DateField(verbose_name="Datum")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Vytvořeno")
+    
+    class Meta:
+        verbose_name = "Novinka"
+        verbose_name_plural = "Novinky"
+        ordering = ['-date', '-created_at']
+    
+    def __str__(self):
+        return f"{self.title} ({self.date})"
+
+
+class NewsRead(models.Model):
+    news = models.ForeignKey(News, on_delete=models.CASCADE, related_name='reads', verbose_name="Novinka")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='news_reads', verbose_name="Uživatel")
+    read_at = models.DateTimeField(auto_now_add=True, verbose_name="Přečteno")
+    
+    class Meta:
+        verbose_name = "Přečtená novinka"
+        verbose_name_plural = "Přečtené novinky"
+        unique_together = ['news', 'user']
+        ordering = ['-read_at']
+    
+    def __str__(self):
+        return f"{self.user.username} read {self.news.title}"
+

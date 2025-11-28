@@ -35,5 +35,10 @@ urlpatterns = [
     path('guides/rules/', views.guides_rules, name='guides_rules'),
     path('guides/equipment-assembly/', views.guides_equipment_assembly, name='guides_equipment_assembly'),
     path('equipment/', views.equipment, name='equipment'),
+    
+    # News endpoints
+    path('news/list/', views.news_list, name='news_list'),
+    path('news/<int:news_id>/', views.news_detail, name='news_detail'),
+    path('news/<int:news_id>/mark-read/', views.mark_news_read, name='mark_news_read'),
 ]
 

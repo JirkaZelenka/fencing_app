@@ -16,7 +16,7 @@ from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
     PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
-    UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike
+    UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm, RegistrationForm
 
@@ -1242,4 +1242,63 @@ def most_liked_photos(request):
         'album_title': 'Nejoblíbenější fotky',
     }
     return render(request, 'fencers/album_detail.html', context)
+
+
+@login_required
+def news_list(request):
+    """API endpoint to get list of news items for dropdown"""
+    all_news = News.objects.all().order_by('-date', '-created_at')
+    read_news_ids = set(
+        NewsRead.objects.filter(user=request.user).values_list('news_id', flat=True)
+    )
+    
+    news_data = []
+    for news in all_news:
+        news_data.append({
+            'id': news.id,
+            'title': news.title,
+            'text': news.text[:150] + '...' if len(news.text) > 150 else news.text,  # Short preview
+            'date': news.date.strftime('%d.%m.%Y'),
+            'is_read': news.id in read_news_ids,
+        })
+    
+    return JsonResponse({
+        'news': news_data,
+        'unread_count': len([n for n in news_data if not n['is_read']])
+    })
+
+
+@login_required
+def news_detail(request, news_id):
+    """API endpoint to get single news item for popup"""
+    news = get_object_or_404(News, id=news_id)
+    is_read = NewsRead.objects.filter(news=news, user=request.user).exists()
+    
+    return JsonResponse({
+        'id': news.id,
+        'title': news.title,
+        'text': news.text,
+        'date': news.date.strftime('%d.%m.%Y'),
+        'is_read': is_read,
+    })
+
+
+@login_required
+@require_POST
+def mark_news_read(request, news_id):
+    """API endpoint to mark news as read"""
+    news = get_object_or_404(News, id=news_id)
+    NewsRead.objects.get_or_create(news=news, user=request.user)
+    
+    # Return updated unread count
+    all_news = News.objects.all()
+    read_news_ids = set(
+        NewsRead.objects.filter(user=request.user).values_list('news_id', flat=True)
+    )
+    unread_count = all_news.exclude(id__in=read_news_ids).count()
+    
+    return JsonResponse({
+        'success': True,
+        'unread_count': unread_count,
+    })
 

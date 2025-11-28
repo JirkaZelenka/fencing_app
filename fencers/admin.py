@@ -6,7 +6,7 @@ from .models import (
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
     EventReaction, PaymentStatus, GlossaryTerm,
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
-    PhotoAlbum, SubAlbum, PhotoLike
+    PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
 
 
@@ -222,3 +222,29 @@ class UserEquipmentAdmin(admin.ModelAdmin):
             return obj.fencer.user.get_full_name() or obj.fencer.user.username
         return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
     get_fencer_name.short_description = 'Šermíř'
+
+
+@admin.register(News)
+class NewsAdmin(admin.ModelAdmin):
+    list_display = ['title', 'date', 'created_by', 'created_at', 'get_read_count']
+    list_filter = ['date', 'created_at']
+    search_fields = ['title', 'text']
+    fields = ('title', 'text', 'date', 'created_by')
+    readonly_fields = ['created_at']
+    
+    def get_read_count(self, obj):
+        return obj.reads.count()
+    get_read_count.short_description = 'Přečteno'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Only set created_by on creation
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(NewsRead)
+class NewsReadAdmin(admin.ModelAdmin):
+    list_display = ['news', 'user', 'read_at']
+    list_filter = ['read_at']
+    search_fields = ['news__title', 'user__username']
+    readonly_fields = ['read_at']

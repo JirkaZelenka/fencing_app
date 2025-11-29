@@ -49,11 +49,14 @@
                             <th class="sortable" data-sort="date" style="cursor: pointer;">
                                 Datum <span class="sort-indicator">↕</span>
                             </th>
-                            <th class="sortable" data-sort="location" style="cursor: pointer;">
-                                Místo <span class="sort-indicator">↕</span>
-                            </th>
                             <th class="sortable" data-sort="position" style="cursor: pointer;">
                                 Umístění <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="participants_count" style="cursor: pointer;">
+                                Počet <span class="sort-indicator">↕</span>
+                            </th>
+                            <th class="sortable" data-sort="percentile" style="cursor: pointer;">
+                                Percentil <span class="sort-indicator">↕</span>
                             </th>
                             <th class="sortable" data-sort="wins" style="cursor: pointer;">
                                 Výhry <span class="sort-indicator">↕</span>
@@ -72,18 +75,24 @@
                     <tbody>
                         {% for participation in participations %}
                         <tr data-tournament="{{ participation.event.title|lower }}" 
-                            data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
+                            data-date="{{ participation.event.date|date:'Y-m-d' }}"
                             data-location="{{ participation.event.location|default:''|lower }}"
                             data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                            data-percentile="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}"
                             data-wins="{{ participation.wins }}"
                             data-losses="{{ participation.losses }}"
                             data-touches-scored="{{ participation.touches_scored }}"
                             data-touches-received="{{ participation.touches_received }}">
                             <td>{{ participation.event.title }}</td>
-                            <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                            <td>{{ participation.event.location|default:"-" }}</td>
+                            <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                             <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
                                 {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                            </td>
+                            <td data-sort-value="{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}0{% endif %}">
+                                {% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}
+                            </td>
+                            <td data-sort-value="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}">
+                                {% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}
                             </td>
                             <td>{{ participation.wins }}</td>
                             <td>{{ participation.losses }}</td>
@@ -92,7 +101,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center">Zatím žádné statistiky</td>
+                            <td colspan="9" class="text-center">Zatím žádné statistiky</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -118,11 +127,14 @@
                                 <th class="sortable" data-sort="date" style="cursor: pointer;">
                                     Datum <span class="sort-indicator">↕</span>
                                 </th>
-                                <th class="sortable" data-sort="location" style="cursor: pointer;">
-                                    Místo <span class="sort-indicator">↕</span>
-                                </th>
                                 <th class="sortable" data-sort="position" style="cursor: pointer;">
                                     Umístění <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="participants_count" style="cursor: pointer;">
+                                    Počet <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="percentile" style="cursor: pointer;">
+                                    Percentil <span class="sort-indicator">↕</span>
                                 </th>
                                 <th class="sortable" data-sort="wins" style="cursor: pointer;">
                                     Výhry <span class="sort-indicator">↕</span>
@@ -141,18 +153,24 @@
                         <tbody>
                             {% for participation in humanitarian_participations %}
                             <tr data-tournament="{{ participation.event.title|lower }}"
-                                data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
+                                data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                 data-location="{{ participation.event.location|default:''|lower }}"
                                 data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                data-percentile="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}"
                                 data-wins="{{ participation.wins }}"
                                 data-losses="{{ participation.losses }}"
                                 data-touches-scored="{{ participation.touches_scored }}"
                                 data-touches-received="{{ participation.touches_received }}">
                                 <td>{{ participation.event.title }}</td>
-                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                                 <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
                                     {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                </td>
+                                <td data-sort-value="{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}0{% endif %}">
+                                    {% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}
+                                </td>
+                                <td data-sort-value="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}">
+                                    {% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}
                                 </td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
@@ -161,7 +179,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -222,11 +240,14 @@
                                     <th class="sortable" data-sort="date" style="cursor: pointer;">
                                         Datum <span class="sort-indicator">↕</span>
                                     </th>
-                                    <th class="sortable" data-sort="location" style="cursor: pointer;">
-                                        Místo <span class="sort-indicator">↕</span>
-                                    </th>
                                     <th class="sortable" data-sort="position" style="cursor: pointer;">
                                         Umístění <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="participants_count" style="cursor: pointer;">
+                                        Počet <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="percentile" style="cursor: pointer;">
+                                        Percentil <span class="sort-indicator">↕</span>
                                     </th>
                                     <th class="sortable" data-sort="wins" style="cursor: pointer;">
                                         Výhry <span class="sort-indicator">↕</span>
@@ -246,19 +267,25 @@
                                 {% for participation in club_participations %}
                                 <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
                                     data-tournament="{{ participation.event.title|lower }}" 
-                                    data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
+                                    data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                     data-location="{{ participation.event.location|default:''|lower }}"
                                     data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                    data-percentile="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}"
                                     data-wins="{{ participation.wins }}"
                                     data-losses="{{ participation.losses }}"
                                     data-touches-scored="{{ participation.touches_scored }}"
                                     data-touches-received="{{ participation.touches_received }}">
                                     <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                     <td>{{ participation.event.title }}</td>
-                                    <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                                    <td>{{ participation.event.location|default:"-" }}</td>
+                                    <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                                     <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
                                         {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                    </td>
+                                    <td data-sort-value="{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}0{% endif %}">
+                                        {% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}
+                                    </td>
+                                    <td data-sort-value="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}">
+                                        {% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}
                                     </td>
                                     <td>{{ participation.wins }}</td>
                                     <td>{{ participation.losses }}</td>
@@ -267,7 +294,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="9" class="text-center">Zatím žádné účasti</td>
+                                    <td colspan="10" class="text-center">Zatím žádné účasti</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -296,11 +323,14 @@
                                 <th class="sortable" data-sort="date" style="cursor: pointer;">
                                     Datum <span class="sort-indicator">↕</span>
                                 </th>
-                                    <th class="sortable" data-sort="location" style="cursor: pointer;">
-                                        Místo <span class="sort-indicator">↕</span>
-                                    </th>
                                 <th class="sortable" data-sort="position" style="cursor: pointer;">
                                     Umístění <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="participants_count" style="cursor: pointer;">
+                                    Počet <span class="sort-indicator">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="percentile" style="cursor: pointer;">
+                                    Percentil <span class="sort-indicator">↕</span>
                                 </th>
                                 <th class="sortable" data-sort="wins" style="cursor: pointer;">
                                     Výhry <span class="sort-indicator">↕</span>
@@ -320,19 +350,25 @@
                             {% for participation in club_humanitarian_participations %}
                             <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
                                 data-tournament="{{ participation.event.title|lower }}"
-                                data-date="{{ participation.event.start_date|date:'Y-m-d' }}"
+                                data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                 data-location="{{ participation.event.location|default:''|lower }}"
                                 data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                data-percentile="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}"
                                 data-wins="{{ participation.wins }}"
                                 data-losses="{{ participation.losses }}"
                                 data-touches-scored="{{ participation.touches_scored }}"
                                 data-touches-received="{{ participation.touches_received }}">
                                 <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                 <td>{{ participation.event.title }}</td>
-                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                                 <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
                                     {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                </td>
+                                <td data-sort-value="{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}0{% endif %}">
+                                    {% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}
+                                </td>
+                                <td data-sort-value="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}">
+                                    {% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}
                                 </td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
@@ -341,7 +377,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="10" class="text-center">Zatím žádné interní turnaje</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -482,13 +518,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         aVal = a.getAttribute('data-date') || '';
                         bVal = b.getAttribute('data-date') || '';
                         break;
-                    case 'location':
-                        aVal = a.getAttribute('data-location') || '';
-                        bVal = b.getAttribute('data-location') || '';
-                        break;
+                    case 'participants_count':
+                        // Find participants_count cell (second td with data-sort-value after position)
+                        const aCountCells = Array.from(a.querySelectorAll('td[data-sort-value]'));
+                        const bCountCells = Array.from(b.querySelectorAll('td[data-sort-value]'));
+                        aVal = aCountCells.length > 1 ? parseInt(aCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        bVal = bCountCells.length > 1 ? parseInt(bCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        return aVal - bVal;
                     case 'position':
                         aVal = parseInt(a.getAttribute('data-position')) || 999;
                         bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'percentile':
+                        aVal = parseFloat(a.getAttribute('data-percentile') || '999');
+                        bVal = parseFloat(b.getAttribute('data-percentile') || '999');
                         break;
                     case 'wins':
                         aVal = parseInt(a.getAttribute('data-wins')) || 0;
@@ -612,13 +655,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         aVal = a.getAttribute('data-date') || '';
                         bVal = b.getAttribute('data-date') || '';
                         break;
-                    case 'location':
-                        aVal = a.getAttribute('data-location') || '';
-                        bVal = b.getAttribute('data-location') || '';
-                        break;
+                    case 'participants_count':
+                        // Find participants_count cell (second td with data-sort-value after position)
+                        const aCountCells = Array.from(a.querySelectorAll('td[data-sort-value]'));
+                        const bCountCells = Array.from(b.querySelectorAll('td[data-sort-value]'));
+                        aVal = aCountCells.length > 1 ? parseInt(aCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        bVal = bCountCells.length > 1 ? parseInt(bCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        return aVal - bVal;
                     case 'position':
                         aVal = parseInt(a.getAttribute('data-position')) || 999;
                         bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'percentile':
+                        aVal = parseFloat(a.getAttribute('data-percentile') || '999');
+                        bVal = parseFloat(b.getAttribute('data-percentile') || '999');
                         break;
                     case 'wins':
                         aVal = parseInt(a.getAttribute('data-wins')) || 0;
@@ -850,13 +900,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         aVal = a.getAttribute('data-date') || '';
                         bVal = b.getAttribute('data-date') || '';
                         break;
-                    case 'location':
-                        aVal = a.getAttribute('data-location') || '';
-                        bVal = b.getAttribute('data-location') || '';
-                        break;
+                    case 'participants_count':
+                        // Find participants_count cell (second td with data-sort-value after position)
+                        const aCountCells = Array.from(a.querySelectorAll('td[data-sort-value]'));
+                        const bCountCells = Array.from(b.querySelectorAll('td[data-sort-value]'));
+                        aVal = aCountCells.length > 1 ? parseInt(aCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        bVal = bCountCells.length > 1 ? parseInt(bCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        return aVal - bVal;
                     case 'position':
                         aVal = parseInt(a.getAttribute('data-position')) || 999;
                         bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'percentile':
+                        aVal = parseFloat(a.getAttribute('data-percentile') || '999');
+                        bVal = parseFloat(b.getAttribute('data-percentile') || '999');
                         break;
                     case 'wins':
                         aVal = parseInt(a.getAttribute('data-wins')) || 0;
@@ -954,13 +1011,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         aVal = a.getAttribute('data-date') || '';
                         bVal = b.getAttribute('data-date') || '';
                         break;
-                    case 'location':
-                        aVal = a.getAttribute('data-location') || '';
-                        bVal = b.getAttribute('data-location') || '';
-                        break;
+                    case 'participants_count':
+                        // Find participants_count cell (second td with data-sort-value after position)
+                        const aCountCells = Array.from(a.querySelectorAll('td[data-sort-value]'));
+                        const bCountCells = Array.from(b.querySelectorAll('td[data-sort-value]'));
+                        aVal = aCountCells.length > 1 ? parseInt(aCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        bVal = bCountCells.length > 1 ? parseInt(bCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        return aVal - bVal;
                     case 'position':
                         aVal = parseInt(a.getAttribute('data-position')) || 999;
                         bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'percentile':
+                        aVal = parseFloat(a.getAttribute('data-percentile') || '999');
+                        bVal = parseFloat(b.getAttribute('data-percentile') || '999');
                         break;
                     case 'wins':
                         aVal = parseInt(a.getAttribute('data-wins')) || 0;

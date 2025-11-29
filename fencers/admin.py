@@ -86,7 +86,7 @@ class ClubAdmin(admin.ModelAdmin):
 @admin.register(EventParticipation)
 class EventParticipationAdmin(admin.ModelAdmin):
     list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses']
-    list_filter = ['event', 'event__start_date']
+    list_filter = ['event', 'event__date']
     search_fields = ['fencer__user__username', 'fencer__user__first_name', 'fencer__user__last_name', 'fencer__first_name', 'fencer__last_name', 'event__title']
     autocomplete_fields = ['fencer']
     
@@ -128,7 +128,7 @@ class CircuitSongAdmin(admin.ModelAdmin):
 @admin.register(PhotoAlbum)
 class PhotoAlbumAdmin(admin.ModelAdmin):
     list_display = ['event', 'date', 'created_at']
-    list_filter = ['created_at', 'event__start_date']
+    list_filter = ['created_at', 'event__date']
     search_fields = ['event__title']
     readonly_fields = ['created_at']
 
@@ -157,9 +157,19 @@ class PhotoLikeAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'start_date', 'location', 'event_type', 'gender']
-    list_filter = ['event_type', 'start_date', 'gender']
+    list_display = ['title', 'date', 'location', 'event_type', 'gender', 'participants_count']
+    list_filter = ['event_type', 'date', 'gender']
     search_fields = ['title', 'description', 'location']
+    fields = ['title', 'description', 'date', 'location', 'event_type', 'gender', 'participants_count', 'external_link']
+    
+    def save_model(self, request, obj, form, change):
+        # Validate participants_count for tournament and humanitarian events
+        if obj.event_type in [Event.EventType.TOURNAMENT, Event.EventType.HUMANITARIAN]:
+            if not obj.participants_count or obj.participants_count <= 0:
+                from django.contrib import messages
+                messages.error(request, 'Počet účastníků je povinný pro Turnaj a Hum. turnaj a musí být větší než 0.')
+                return
+        obj.save()
 
 
 @admin.register(EventReaction)

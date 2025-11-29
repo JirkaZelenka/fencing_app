@@ -38,8 +38,9 @@
                                 <th>Šermíř</th>
                                 <th>Turnaj</th>
                                 <th>Datum</th>
-                                <th>Místo</th>
                                 <th>Umístění</th>
+                                <th>Počet</th>
+                                <th>Percentil</th>
                                 <th>Výhry</th>
                                 <th>Prohry</th>
                             </tr>
@@ -49,15 +50,16 @@
                             <tr>
                                 <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                 <td>{{ participation.event.title }}</td>
-                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                                 <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                <td>{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}</td>
+                                <td>{% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}</td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center">Zatím žádné účasti</td>
+                                <td colspan="8" class="text-center">Zatím žádné účasti</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -80,8 +82,9 @@
                                 <th>Šermíř</th>
                                 <th>Turnaj</th>
                                 <th>Datum</th>
-                                <th>Místo</th>
                                 <th>Umístění</th>
+                                <th>Počet</th>
+                                <th>Percentil</th>
                                 <th>Výhry</th>
                                 <th>Prohry</th>
                                 <th>Zasazené zásahy</th>
@@ -93,9 +96,10 @@
                             <tr>
                                 <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
                                 <td>{{ participation.event.title }}</td>
-                                <td>{{ participation.event.start_date|date:"d.m.Y" }}</td>
-                                <td>{{ participation.event.location|default:"-" }}</td>
+                                <td>{{ participation.event.date|date:"d.m.Y" }}</td>
                                 <td>{% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}</td>
+                                <td>{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}</td>
+                                <td>{% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}</td>
                                 <td>{{ participation.wins }}</td>
                                 <td>{{ participation.losses }}</td>
                                 <td>{{ participation.touches_scored }}</td>
@@ -103,7 +107,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="10" class="text-center">Zatím žádné interní turnaje</td>
                             </tr>
                             {% endfor %}
                         </tbody>

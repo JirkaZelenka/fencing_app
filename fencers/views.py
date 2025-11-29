@@ -146,13 +146,11 @@ def ensure_aware(dt: datetime) -> datetime:
 
 def serialize_event(event, reaction=None):
     meta = get_event_meta(event.event_type)
-    has_time = event.start_date.time() != datetime.min.time()
     return {
         'id': event.id,
         'title': event.title,
         'description': event.description,
-        'start': event.start_date,
-        'end': event.end_date,
+        'start': event.date,
         'location': event.location,
         'external_link': event.external_link,
         'event_type': event.event_type,
@@ -161,7 +159,7 @@ def serialize_event(event, reaction=None):
         'source': 'event',
         'allows_reaction': True,
         'user_reaction': reaction,
-        'has_time': has_time,
+        'has_time': False,
     }
 
 
@@ -288,7 +286,7 @@ def about_me(request):
     win_rate = (total_wins / (total_wins + total_losses) * 100) if (total_wins + total_losses) > 0 else 0
     
     # Filter events: show events that match user's gender or are "Vše" (All)
-    all_events = Event.objects.all().order_by('-start_date')
+    all_events = Event.objects.all().order_by('-date')
     if profile.gender:
         # Show events that match user's gender or are "Vše"
         all_events = all_events.filter(
@@ -315,7 +313,7 @@ def about_me(request):
             'type_label': meta['label'],
             'class_suffix': meta['class_suffix'],
             'name': event.title,
-            'date': event.start_date.date(),
+            'date': event.date,
             'location': event.location,
             'is_participating': is_participating,
             'position': participation.position if participation else None,
@@ -368,7 +366,7 @@ def statistics_individual(request):
     humanitarian_participations = EventParticipation.objects.filter(
         fencer=profile,
         event__event_type=Event.EventType.HUMANITARIAN
-    ).select_related('event').order_by('-event__start_date')
+    ).select_related('event').order_by('-event__date')
     
     club = None
     club_fencers = None
@@ -395,7 +393,7 @@ def statistics_individual(request):
         # Get humanitarian participations separately (not affected by filters)
         club_humanitarian_participations = club_participations_base.filter(
             event__event_type=Event.EventType.HUMANITARIAN
-        ).order_by('-event__start_date')
+        ).order_by('-event__date')
         
         # Apply filters to main participations queryset
         club_participations_qs = club_participations_base
@@ -459,7 +457,7 @@ def statistics_club(request):
     internal_participations = EventParticipation.objects.filter(
         fencer__in=club_fencers,
         event__event_type=Event.EventType.HUMANITARIAN
-    ).select_related('fencer', 'fencer__user', 'event').order_by('-event__start_date')
+    ).select_related('fencer', 'fencer__user', 'event').order_by('-event__date')
     
     context = {
         'club': profile.club,
@@ -552,11 +550,11 @@ def delete_circuit_training(request, circuit_id):
 @login_required
 def event_photos(request):
     # Get all albums
-    all_albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__start_date')
+    all_albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__date')
     
     # Extract unique years from albums
     years = sorted(set(
-        album.event.start_date.year for album in all_albums
+        album.event.date.year for album in all_albums
     ), reverse=True)
     
     # Get filter year from request
@@ -564,7 +562,7 @@ def event_photos(request):
     if filter_year:
         try:
             filter_year = int(filter_year)
-            albums = all_albums.filter(event__start_date__year=filter_year)
+            albums = all_albums.filter(event__date__year=filter_year)
         except (ValueError, TypeError):
             albums = all_albums
             filter_year = None
@@ -643,7 +641,7 @@ def upload_photo(request, subalbum_id):
         title=title,
         description=description,
         photo=photo_file,
-        event_date=subalbum.album.event.start_date.date(),
+        event_date=subalbum.album.event.date,
         uploaded_by=request.user,
         subalbum=subalbum
     )
@@ -696,10 +694,11 @@ def calendar_events(request):
         next_month = month + 1
         next_year = year
     
-    # Get first and last day of the month
-    first_day = ensure_aware(datetime(year, month, 1))
+    # Get first and last day of the month (as date objects)
+    from datetime import date as date_type
+    first_day = date_type(year, month, 1)
     last_day_num = calendar.monthrange(year, month)[1]
-    last_day = ensure_aware(datetime(year, month, last_day_num, 23, 59, 59))
+    last_day = date_type(year, month, last_day_num)
     
     # Get filter year from request (for events list, not calendar month)
     filter_year = request.GET.get('filter_year')
@@ -732,10 +731,10 @@ def calendar_events(request):
     
     # Get all events in this month
     month_events = Event.objects.filter(
-        start_date__gte=first_day,
-        start_date__lte=last_day,
+        date__gte=first_day,
+        date__lte=last_day,
         event_type__in=selected_types_set,
-    ).prefetch_related('photo_album').order_by('start_date')
+    ).prefetch_related('photo_album').order_by('date')
     
     # Get user's fencer profile for participation check
     user_profile = None
@@ -777,7 +776,7 @@ def calendar_events(request):
         serialized['user_participated'] = event.id in user_participation_event_ids if user_participation_event_ids else False
         # Check if event has photos in subalbums
         serialized['has_photos'] = event.id in events_with_photos if events_with_photos else False
-        event_date = serialized['start'].date()
+        event_date = serialized['start']  # Already a date object, not datetime
         events_by_date.setdefault(event_date, []).append(serialized)
     
     for event_list in events_by_date.values():
@@ -807,27 +806,27 @@ def calendar_events(request):
     
     # Extract unique years from all events for filter buttons
     all_events_years = sorted(set(
-        Event.objects.values_list('start_date__year', flat=True).distinct()
+        Event.objects.values_list('date__year', flat=True).distinct()
     ), reverse=True)
     
     # Get upcoming events for the list view
-    now = timezone.now()
+    now = timezone.now().date()
     
     upcoming_events_qs = Event.objects.filter(
-        start_date__gte=now,
+        date__gte=now,
         event_type__in=selected_types_set,
     )
     if filter_year:
-        upcoming_events_qs = upcoming_events_qs.filter(start_date__year=filter_year)
-    upcoming_events_qs = upcoming_events_qs.prefetch_related('photo_album').order_by('start_date')
+        upcoming_events_qs = upcoming_events_qs.filter(date__year=filter_year)
+    upcoming_events_qs = upcoming_events_qs.prefetch_related('photo_album').order_by('date')
     
     past_events_qs = Event.objects.filter(
-        start_date__lt=now,
+        date__lt=now,
         event_type__in=selected_types_set,
     )
     if filter_year:
-        past_events_qs = past_events_qs.filter(start_date__year=filter_year)
-    past_events_qs = past_events_qs.prefetch_related('photo_album').order_by('-start_date')[:30]
+        past_events_qs = past_events_qs.filter(date__year=filter_year)
+    past_events_qs = past_events_qs.prefetch_related('photo_album').order_by('-date')[:30]
     
     # Get user reactions and attach to events
     reaction_dict = {}

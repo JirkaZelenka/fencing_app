@@ -58,8 +58,7 @@ class Event(models.Model):
 
     title = models.CharField(max_length=200, verbose_name="Název")
     description = models.TextField(blank=True, verbose_name="Popis")
-    start_date = models.DateTimeField(verbose_name="Začátek")
-    end_date = models.DateTimeField(null=True, blank=True, verbose_name="Konec")
+    date = models.DateField(verbose_name="Datum")
     location = models.CharField(max_length=200, blank=True, verbose_name="Místo")
     external_link = models.URLField(blank=True, verbose_name="Externí odkaz (czechfencing)")
     event_type = models.CharField(
@@ -74,15 +73,30 @@ class Event(models.Model):
         default=Gender.ALL,
         verbose_name="Pohlaví"
     )
+    participants_count = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Počet účastníků",
+        help_text="Povinné pro Turnaj a Hum. turnaj"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        # Require participants_count for tournament and humanitarian events
+        if self.event_type in [self.EventType.TOURNAMENT, self.EventType.HUMANITARIAN]:
+            if not self.participants_count or self.participants_count <= 0:
+                raise ValidationError({
+                    'participants_count': 'Počet účastníků je povinný pro Turnaj a Hum. turnaj a musí být větší než 0.'
+                })
     
     class Meta:
         verbose_name = "Akce"
         verbose_name_plural = "Akce"
-        ordering = ['start_date']
+        ordering = ['date']
 
     def __str__(self):
-        return f"{self.title} ({self.start_date:%d.%m.%Y})"
+        return f"{self.title} ({self.date:%d.%m.%Y})"
 
 
 class EventParticipation(models.Model):
@@ -98,7 +112,16 @@ class EventParticipation(models.Model):
         verbose_name = "Účast na akci"
         verbose_name_plural = "Účasti na akcích"
         unique_together = ['fencer', 'event']
-        ordering = ['-event__start_date']
+        ordering = ['-event__date']
+    
+    def get_percentile(self):
+        """Calculate percentile: (position / participants_count) * 100"""
+        if not self.position or not self.event.participants_count:
+            return None
+        if self.event.participants_count <= 0:
+            return None
+        percentile = (self.position / self.event.participants_count) * 100
+        return round(percentile, 1)
 
 
 class TrainingNote(models.Model):
@@ -147,14 +170,14 @@ class PhotoAlbum(models.Model):
     class Meta:
         verbose_name = "Fotoalbum"
         verbose_name_plural = "Fotoalba"
-        ordering = ['-event__start_date']
+        ordering = ['-event__date']
     
     def __str__(self):
         return f"Album: {self.event.title}"
     
     @property
     def date(self):
-        return self.event.start_date.date()
+        return self.event.date
 
 
 class SubAlbum(models.Model):

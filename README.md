@@ -33,8 +33,8 @@ Funkce (jednotlivé stránky):
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
 TODO:
-
-- fixnout Red dot pro nezaplacené poplatky + qR kod (kody) + možnost notifikovat admina když už jsem zaplatil
+- úpravaa start end date s časem na prostě date. když bude důležitý čas, půjde do poznámky
+- přidat počet účsatníků a tedy percentil
 
 - pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,
 a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral
@@ -49,3 +49,5 @@ WIKI -  doplnit materiály a URLs, fotka hrotu atd
 později linky na výbavu. Seznam dobrých značek...
 
 přidat kvalitní fotky všeho
+
+Masíčko - začít řešit tu hudbu jak chtěl Tonda

@@ -153,13 +153,7 @@
                     <span class="badge event-type-badge {{ event.class_suffix }}">{{ event.type_label }}</span>
                 </div>
                 <p class="card-text">
-                    <strong>Datum:</strong>
-                    {% if event.has_time %}
-                        {{ event.start|date:"d.m.Y H:i" }}
-                        {% if event.end %}- {{ event.end|date:"d.m.Y H:i" }}{% endif %}
-                    {% else %}
-                        {{ event.start|date:"d.m.Y" }}
-                    {% endif %}<br>
+                    <strong>Datum:</strong> {{ event.start|date:"d.m.Y" }}<br>
                     {% if event.location %}<strong>Místo:</strong> {{ event.location }}<br>{% endif %}
                     {% if event.description %}{{ event.description }}<br>{% endif %}
                     {% if event.external_link %}
@@ -217,13 +211,7 @@
                         <span class="badge event-type-badge {{ event.class_suffix }}">{{ event.type_label }}</span>
                     </div>
                     <p class="card-text">
-                        <strong>Datum:</strong>
-                        {% if event.has_time %}
-                            {{ event.start|date:"d.m.Y H:i" }}
-                            {% if event.end %}- {{ event.end|date:"d.m.Y H:i" }}{% endif %}
-                        {% else %}
-                            {{ event.start|date:"d.m.Y" }}
-                        {% endif %}
+                        <strong>Datum:</strong> {{ event.start|date:"d.m.Y" }}
                         {% if event.location %}<br><strong>Místo:</strong> {{ event.location }}{% endif %}
                     </p>
                     

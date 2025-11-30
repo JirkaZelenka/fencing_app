@@ -36,11 +36,11 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(FencerProfile)
 class FencerProfileAdmin(admin.ModelAdmin):
-    list_display = ['get_display_name', 'user', 'club', 'gender', 'phone', 'get_user_email', 'is_matched']
+    list_display = ['get_display_name', 'user', 'club', 'gender', 'birth_year', 'phone', 'get_user_email', 'is_matched']
     list_filter = ['club', 'user', 'gender']
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email', 'first_name', 'last_name', 'email', 'phone']
     autocomplete_fields = ['user']
-    fields = ('user', 'club', 'phone', 'gender', 'first_name', 'last_name', 'email')
+    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name', 'email')
     actions = ['unpair_selected_profiles']
     
     def unpair_selected_profiles(self, request, queryset):
@@ -85,7 +85,7 @@ class ClubAdmin(admin.ModelAdmin):
 
 @admin.register(EventParticipation)
 class EventParticipationAdmin(admin.ModelAdmin):
-    list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses']
+    list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses', 'points']
     list_filter = ['event', 'event__date']
     search_fields = ['fencer__user__username', 'fencer__user__first_name', 'fencer__user__last_name', 'fencer__first_name', 'fencer__last_name', 'event__title']
     autocomplete_fields = ['fencer']

@@ -33,6 +33,7 @@ class FencerProfile(models.Model):
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
     email = models.EmailField(blank=True, verbose_name="Email")
+    birth_year = models.IntegerField(null=True, blank=True, verbose_name="Rok narození")
     
     def __str__(self):
         if self.user:
@@ -107,6 +108,7 @@ class EventParticipation(models.Model):
     losses = models.IntegerField(default=0, verbose_name="Prohry")
     touches_scored = models.IntegerField(default=0, verbose_name="Zasazené zásahy")
     touches_received = models.IntegerField(default=0, verbose_name="Obdržené zásahy")
+    points = models.FloatField(null=True, blank=True, verbose_name="Body")
     
     class Meta:
         verbose_name = "Účast na akci"

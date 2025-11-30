@@ -54,7 +54,7 @@ class Command(BaseCommand):
         ws = wb.create_sheet('Users')
         
         # Headers
-        headers = ['username', 'email', 'first_name', 'last_name', 'club_name', 'phone', 'gender']
+        headers = ['username', 'email', 'first_name', 'last_name', 'club_name', 'phone', 'gender', 'birth_year']
         ws.append(headers)
         
         # Style header row
@@ -68,17 +68,17 @@ class Command(BaseCommand):
         
         # Example data rows
         examples = [
-            ['john.doe', 'john.doe@example.com', 'John', 'Doe', 'Fencing Club Prague', '+420123456789', 'M'],
-            ['jane.smith', 'jane.smith@example.com', 'Jane', 'Smith', 'Fencing Club Prague', '+420987654321', 'Z'],
-            ['', 'bob.wilson@example.com', 'Bob', 'Wilson', 'Fencing Club Brno', '', 'M'],
-            ['alice.brown', '', 'Alice', 'Brown', 'Fencing Club Ostrava', '+420555123456', 'Z'],
+            ['john.doe', 'john.doe@example.com', 'John', 'Doe', 'Fencing Club Prague', '+420123456789', 'M', '2000'],
+            ['jane.smith', 'jane.smith@example.com', 'Jane', 'Smith', 'Fencing Club Prague', '+420987654321', 'Z', '2001'],
+            ['', 'bob.wilson@example.com', 'Bob', 'Wilson', 'Fencing Club Brno', '', 'M', '1999'],
+            ['alice.brown', '', 'Alice', 'Brown', 'Fencing Club Ostrava', '+420555123456', 'Z', '2002'],
         ]
         
         for row in examples:
             ws.append(row)
         
         # Adjust column widths
-        column_widths = [15, 25, 12, 12, 20, 18, 8]
+        column_widths = [15, 25, 12, 12, 20, 18, 8, 12]
         for idx, width in enumerate(column_widths, start=1):
             ws.column_dimensions[ws.cell(row=1, column=idx).column_letter].width = width
         
@@ -158,7 +158,7 @@ class Command(BaseCommand):
         ws = wb.create_sheet('Participations')
         
         # Headers
-        headers = ['fencer_identifier', 'event_title', 'date', 'position', 'wins', 'losses', 'touches_scored', 'touches_received']
+        headers = ['fencer_identifier', 'event_title', 'date', 'position', 'wins', 'losses', 'touches_scored', 'touches_received', 'points']
         ws.append(headers)
         
         # Style header row
@@ -181,7 +181,8 @@ class Command(BaseCommand):
                 '8',
                 '3',
                 '45',
-                '32'
+                '32',
+                '12.5'
             ],
             [
                 'jane.smith',
@@ -191,7 +192,8 @@ class Command(BaseCommand):
                 '10',
                 '1',
                 '52',
-                '28'
+                '28',
+                '25.0'
             ],
             [
                 'bob.wilson@example.com',
@@ -201,7 +203,8 @@ class Command(BaseCommand):
                 '12',
                 '0',
                 '60',
-                '25'
+                '25',
+                '30.0'
             ],
             [
                 'Alice Brown',
@@ -211,7 +214,8 @@ class Command(BaseCommand):
                 '7',
                 '2',
                 '38',
-                '30'
+                '30',
+                '15.5'
             ],
         ]
         
@@ -219,7 +223,7 @@ class Command(BaseCommand):
             ws.append(row)
         
         # Adjust column widths
-        column_widths = [20, 30, 15, 10, 8, 8, 15, 15]
+        column_widths = [20, 30, 15, 10, 8, 8, 15, 15, 10]
         for idx, width in enumerate(column_widths, start=1):
             ws.column_dimensions[ws.cell(row=1, column=idx).column_letter].width = width
         

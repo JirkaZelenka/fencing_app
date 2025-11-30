@@ -12,6 +12,7 @@ urlpatterns = [
     
     # Main pages
     path('about-me/', views.about_me, name='about_me'),
+    path('api/member-detail/<int:profile_id>/', views.member_detail_api, name='member_detail_api'),
     path('statistics/individual/', views.statistics_individual, name='statistics_individual'),
     path('statistics/club/', views.statistics_club, name='statistics_club'),
     path('training/notes/', views.training_notes, name='training_notes'),

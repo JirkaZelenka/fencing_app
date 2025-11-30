@@ -27,8 +27,8 @@
                     <p><strong>Uživatelské jméno:</strong> {{ user.username }}</p>
                     {% if profile %}
                         <p><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
-                        {% if profile.gender %}
-                            <p><strong>Pohlaví:</strong> {{ profile.get_gender_display }}</p>
+                        {% if profile.birth_year %}
+                            <p><strong>Rok narození:</strong> {{ profile.birth_year }}</p>
                         {% endif %}
                         {% if profile.phone %}
                             <p><strong>Telefon:</strong> {{ profile.phone }}</p>
@@ -72,6 +72,7 @@
                                     <th>Datum</th>
                                     <th>Umístění</th>
                                     <th>Účast</th>
+                                    <th>Body</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,10 +91,11 @@
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
+                                    <td>{% if item.points %}{{ item.points|floatformat:1 }}{% else %}-{% endif %}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center">Zatím žádné turnaje ani akce</td>
+                                    <td colspan="5" class="text-center">Zatím žádné turnaje ani akce</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -116,12 +118,14 @@
                     <ul>
                         {% for fencer_profile in club_fencers_m %}
                         <li>
-                            {% if fencer_profile.user %}
-                                <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                            {% else %}
-                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                            {% endif %}
+                            <a href="#" class="member-link text-decoration-none" data-profile-id="{{ fencer_profile.id }}" style="cursor: pointer;">
+                                {% if fencer_profile.user %}
+                                    <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                    {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                {% else %}
+                                    {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                {% endif %}
+                            </a>
                         </li>
                         {% empty %}
                         <li class="text-muted">Žádní muži</li>
@@ -133,12 +137,14 @@
                     <ul>
                         {% for fencer_profile in club_fencers_z %}
                         <li>
-                            {% if fencer_profile.user %}
-                                <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                            {% else %}
-                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                            {% endif %}
+                            <a href="#" class="member-link text-decoration-none" data-profile-id="{{ fencer_profile.id }}" style="cursor: pointer;">
+                                {% if fencer_profile.user %}
+                                    <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                    {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                {% else %}
+                                    {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                {% endif %}
+                            </a>
                         </li>
                         {% empty %}
                         <li class="text-muted">Žádné ženy</li>
@@ -153,12 +159,14 @@
                     <ul>
                         {% for fencer_profile in club_fencers_undefined %}
                         <li>
-                            {% if fencer_profile.user %}
-                                <span class="text-success" style="font-size: 1.2em;">✓</span>
-                                {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
-                            {% else %}
-                                {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
-                            {% endif %}
+                            <a href="#" class="member-link text-decoration-none" data-profile-id="{{ fencer_profile.id }}" style="cursor: pointer;">
+                                {% if fencer_profile.user %}
+                                    <span class="text-success" style="font-size: 1.2em;">✓</span>
+                                    {{ fencer_profile.user.get_full_name|default:fencer_profile.user.username }}
+                                {% else %}
+                                    {{ fencer_profile.first_name }} {{ fencer_profile.last_name }}
+                                {% endif %}
+                            </a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -172,6 +180,25 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Member Detail Modal -->
+<div class="modal fade" id="memberModal" tabindex="-1" aria-labelledby="memberModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="memberModalLabel">Profil člena</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="memberModalBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Načítání...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const infoMeToggle = document.getElementById('infoMeToggle');
@@ -202,6 +229,65 @@ document.addEventListener('DOMContentLoaded', function() {
         if (infoPersonal) infoPersonal.style.display = 'none';
     }
     {% endif %}
+    
+    // Member detail modal functionality
+    const memberLinks = document.querySelectorAll('.member-link');
+    const memberModal = new bootstrap.Modal(document.getElementById('memberModal'));
+    const memberModalBody = document.getElementById('memberModalBody');
+    
+    memberLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const profileId = this.getAttribute('data-profile-id');
+            
+            // Show loading
+            memberModalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Načítání...</span></div></div>';
+            memberModal.show();
+            
+            // Fetch member data
+            fetch(`/api/member-detail/${profileId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<div class="row mt-2">';
+                    html += '<div class="col-md-4">';
+                    html += '<div class="card">';
+                    html += '<div class="card-body">';
+                    html += '<h5 class="card-title">Profil</h5>';
+                    html += `<p><strong>Jméno:</strong> ${data.name || '-'}</p>`;
+                    html += `<p><strong>Klub:</strong> ${data.club || 'Nepřiřazeno'}</p>`;
+                    if (data.birth_year) {
+                        html += `<p><strong>Rok narození:</strong> ${data.birth_year}</p>`;
+                    }
+                    if (data.phone) {
+                        html += `<p><strong>Telefon:</strong> ${data.phone}</p>`;
+                    }
+                    html += '</div></div></div>';
+                    
+                    html += '<div class="col-md-8">';
+                    html += '<div class="card">';
+                    html += '<div class="card-body">';
+                    html += '<h5 class="card-title">Základní statistika</h5>';
+                    html += '<div class="row">';
+                    html += '<div class="col-md-6">';
+                    html += `<p><strong>Celkem turnajů:</strong> ${data.total_tournaments || 0}</p>`;
+                    html += `<p><strong>Výhry:</strong> ${data.total_wins || 0}</p>`;
+                    html += `<p><strong>Prohry:</strong> ${data.total_losses || 0}</p>`;
+                    html += `<p><strong>Úspěšnost:</strong> ${data.win_rate || 0}%</p>`;
+                    html += '</div>';
+                    html += '<div class="col-md-6">';
+                    html += `<p><strong>Zasazené zásahy:</strong> ${data.total_touches_scored || 0}</p>`;
+                    html += `<p><strong>Obdržené zásahy:</strong> ${data.total_touches_received || 0}</p>`;
+                    html += '</div></div></div></div></div>';
+                    html += '</div>';
+                    
+                    memberModalBody.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    memberModalBody.innerHTML = '<div class="alert alert-danger">Chyba při načítání dat.</div>';
+                });
+        });
+    });
 });
 </script>
 {% endblock %}

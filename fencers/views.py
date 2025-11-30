@@ -317,6 +317,7 @@ def about_me(request):
             'location': event.location,
             'is_participating': is_participating,
             'position': participation.position if participation else None,
+            'points': participation.points if participation else None,
         })
     combined_items.sort(key=lambda x: x['date'], reverse=True)
     
@@ -343,6 +344,58 @@ def about_me(request):
         'initial_view': view_param,
     }
     return render(request, 'fencers/about_me.html', context)
+
+
+@login_required
+def member_detail_api(request, profile_id):
+    """API endpoint to get member profile and statistics for popup."""
+    try:
+        profile = FencerProfile.objects.get(id=profile_id)
+        
+        # Check if user has access (same club)
+        user_profile = getattr(request.user, 'fencer_profile', None)
+        if not user_profile or not user_profile.club or profile.club != user_profile.club:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+        
+        # Get member name
+        if profile.user:
+            name = profile.user.get_full_name() or profile.user.username
+            username = profile.user.username
+        else:
+            name = f"{profile.first_name} {profile.last_name}".strip() or "Nepřiřazený profil"
+            username = None
+        
+        # Get tournament participations for statistics
+        tournament_participations = EventParticipation.objects.filter(
+            fencer=profile,
+            event__event_type=Event.EventType.TOURNAMENT
+        ).select_related('event')
+        
+        # Calculate statistics
+        total_tournaments = tournament_participations.count()
+        total_wins = tournament_participations.aggregate(Sum('wins'))['wins__sum'] or 0
+        total_losses = tournament_participations.aggregate(Sum('losses'))['losses__sum'] or 0
+        total_touches_scored = tournament_participations.aggregate(Sum('touches_scored'))['touches_scored__sum'] or 0
+        total_touches_received = tournament_participations.aggregate(Sum('touches_received'))['touches_received__sum'] or 0
+        win_rate = (total_wins / (total_wins + total_losses) * 100) if (total_wins + total_losses) > 0 else 0
+        
+        data = {
+            'name': name,
+            'username': username,
+            'club': str(profile.club) if profile.club else None,
+            'birth_year': profile.birth_year,
+            'phone': profile.phone,
+            'total_tournaments': total_tournaments,
+            'total_wins': total_wins,
+            'total_losses': total_losses,
+            'total_touches_scored': total_touches_scored,
+            'total_touches_received': total_touches_received,
+            'win_rate': round(win_rate, 1),
+        }
+        
+        return JsonResponse(data)
+    except FencerProfile.DoesNotExist:
+        return JsonResponse({'error': 'Profile not found'}, status=404)
 
 
 @login_required
@@ -447,6 +500,8 @@ def statistics_club(request):
     
     participations = EventParticipation.objects.filter(
         fencer__in=club_fencers
+    ).exclude(
+        event__event_type=Event.EventType.HUMANITARIAN
     ).select_related('fencer', 'fencer__user', 'event')
     
     # Filter by tournament name if provided

@@ -33,14 +33,19 @@ Funkce (jednotlivé stránky):
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
 TODO:
-- úpravaa start end date s časem na prostě date. když bude důležitý čas, půjde do poznámky
-- přidat počet účsatníků a tedy percentil
 
-- pokud jsem se nenašel na seznamu profilů, tak možnost požádat o vytvoření,
-a nebo se podívat už na přiřazené a reportnout že mi to někdo sebral
+- bodíky za turnaj - pitomý  sloupec se neukazuje na jedné tabulce - Klubs
+- rok narození do Profilu
+- odebrat pohlaví z Profilu
+- možnost prokliknout lidi z Klubu a vidět jejich profil náhled
+
 - moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
 připravit všem profily, jen naskočit...
 
+- fotky, subalab a lajky převést na Fencera, nikoliv nechávat na uživateli - aby to bylo trvalejší
+
+
+-----------------------------------
 dodělat opravdové turnaje 2025 a 2024
 
 - Statistiky - přidat totaly nebo průměry, a filtry

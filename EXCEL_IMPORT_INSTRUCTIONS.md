@@ -32,6 +32,7 @@ This sheet contains user and fencer profile information.
 | `club_name` | Optional | Name of the club | `Fencing Club Prague` |
 | `phone` | Optional | Phone number | `+420123456789` |
 | `gender` | Optional | Gender (M, Z, or Ž) | `M` |
+| `birth_year` | Optional | Year of birth | `2000` |
 
 *At least one of `username`, `email`, or both `first_name` and `last_name` must be provided.
 
@@ -83,6 +84,7 @@ This sheet links fencers to events with their results.
 | `losses` | Optional | Number of losses | `3` |
 | `touches_scored` | Optional | Touches scored | `45` |
 | `touches_received` | Optional | Touches received | `32` |
+| `points` | Optional | Points (float number) | `12.5` |
 
 **Notes:**
 - `fencer_identifier` must match a value from the Users sheet (username, email, or "first_name last_name").

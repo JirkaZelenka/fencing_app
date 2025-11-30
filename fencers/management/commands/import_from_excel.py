@@ -97,7 +97,7 @@ class Command(BaseCommand):
         
         # Read header row
         headers = [cell.value for cell in sheet[1]]
-        expected_headers = ['username', 'email', 'first_name', 'last_name', 'club_name', 'phone', 'gender']
+        expected_headers = ['username', 'email', 'first_name', 'last_name', 'club_name', 'phone', 'gender', 'birth_year']
         
         # Validate headers
         if not all(header in headers for header in expected_headers):
@@ -270,6 +270,7 @@ class Command(BaseCommand):
             club_name = user_data.get('club_name', '')
             phone = user_data.get('phone', '')
             gender = user_data.get('gender', '')
+            birth_year = user_data.get('birth_year')
             
             identifier = username or email or f"{first_name} {last_name}".strip()
             user = user_mapping.get(identifier)
@@ -291,6 +292,14 @@ class Command(BaseCommand):
             # Get or create fencer profile
             if not dry_run:
                 if hasattr(user, 'id') and user.id:  # Real user object
+                    # Parse birth_year
+                    birth_year_value = None
+                    if birth_year:
+                        try:
+                            birth_year_value = int(birth_year)
+                        except (ValueError, TypeError):
+                            pass
+                    
                     fencer_profile, created = FencerProfile.objects.get_or_create(
                         user=user,
                         defaults={
@@ -300,6 +309,7 @@ class Command(BaseCommand):
                             'first_name': first_name or '',
                             'last_name': last_name or '',
                             'email': email or '',
+                            'birth_year': birth_year_value,
                         }
                     )
                     if created:
@@ -312,9 +322,19 @@ class Command(BaseCommand):
                             fencer_profile.phone = phone
                         if gender:
                             fencer_profile.gender = gender
+                        if birth_year_value is not None:
+                            fencer_profile.birth_year = birth_year_value
                         fencer_profile.save()
                         self.stdout.write(f'  Updated fencer profile for: {identifier}')
                 else:
+                    # Parse birth_year
+                    birth_year_value = None
+                    if birth_year:
+                        try:
+                            birth_year_value = int(birth_year)
+                        except (ValueError, TypeError):
+                            pass
+                    
                     # Create profile without user
                     fencer_profile, created = FencerProfile.objects.get_or_create(
                         first_name=first_name,
@@ -324,6 +344,7 @@ class Command(BaseCommand):
                             'phone': phone or '',
                             'gender': gender or '',
                             'email': email or '',
+                            'birth_year': birth_year_value,
                         }
                     )
                     if created:
@@ -439,6 +460,7 @@ class Command(BaseCommand):
             losses = participation_data.get('losses', 0) or 0
             touches_scored = participation_data.get('touches_scored', 0) or 0
             touches_received = participation_data.get('touches_received', 0) or 0
+            points = participation_data.get('points')
             
             # Find fencer
             fencer = fencer_mapping.get(fencer_identifier)
@@ -480,6 +502,14 @@ class Command(BaseCommand):
                 skipped_count += 1
                 continue
             
+            # Parse points
+            points_value = None
+            if points:
+                try:
+                    points_value = float(points)
+                except (ValueError, TypeError):
+                    pass
+            
             # Create participation
             if not dry_run:
                 if hasattr(fencer, 'id') and hasattr(event, 'id'):  # Real objects
@@ -492,6 +522,7 @@ class Command(BaseCommand):
                             'losses': int(losses) if losses else 0,
                             'touches_scored': int(touches_scored) if touches_scored else 0,
                             'touches_received': int(touches_received) if touches_received else 0,
+                            'points': points_value,
                         }
                     )
                     if created:
@@ -500,6 +531,10 @@ class Command(BaseCommand):
                             f'  Created participation: {fencer_identifier} -> {event.title}'
                         ))
                     else:
+                        # Update existing participation with points if provided
+                        if points_value is not None:
+                            participation.points = points_value
+                            participation.save()
                         self.stdout.write(f'  Participation already exists: {fencer_identifier} -> {event.title}')
                 else:
                     self.stdout.write(self.style.WARNING('  Cannot create participation in dry run mode'))

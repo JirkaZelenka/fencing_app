@@ -23,6 +23,137 @@
                     <div class="mb-3">
                         <label for="{{ form.exercises.id_for_label }}" class="form-label">Cvičení (každé na nový řádek)</label>
                         {{ form.exercises }}
+                        <small class="form-text text-muted d-block mt-1">Dvojklik na cvičení níže ho přidá do seznamu</small>
+                        
+                        <!-- Exercise selector -->
+                        <div class="mt-3 border rounded p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                            <div class="accordion" id="exerciseAccordion">
+                                <!-- Nohy -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingNohy">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNohy">
+                                            Nohy
+                                        </button>
+                                    </h2>
+                                    <div id="collapseNohy" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordion">
+                                        <div class="accordion-body">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Dřepy</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skoky na místě</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výskoky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh na místě</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady do strany</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Dřepy na jedné noze</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady vzad</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes švihadlo</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady s výskokem</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Břicho -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingBricho">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBricho">
+                                            Břicho
+                                        </button>
+                                    </h2>
+                                    <div id="collapseBricho" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordion">
+                                        <div class="accordion-body">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Sedy-lehy</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Plank</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání nohou</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Ruské otočky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zkracovačky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Plank na boku</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Horské lezení</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání kolen</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Nůžky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Váha</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Záda -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingZada">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseZada">
+                                            Záda
+                                        </button>
+                                    </h2>
+                                    <div id="collapseZada" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordion">
+                                        <div class="accordion-body">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Hyperextenze</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Superman</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Prkno</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky na široko</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky na úzko</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Diamantové kliky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky s tlesknutím</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Přítahy</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání trupu</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Výdrž -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingVydrz">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVydrz">
+                                            Výdrž
+                                        </button>
+                                    </h2>
+                                    <div id="collapseVydrz" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordion">
+                                        <div class="accordion-body">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh na místě</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes švihadlo</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Burpees</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Mountain climbers</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh s vysokými koleny</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh s kopáním do zadku</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání žabáků</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh pozpátku</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Intervalový běh</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Ostatní -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOstatni">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOstatni">
+                                            Ostatní
+                                        </button>
+                                    </h2>
+                                    <div id="collapseOstatni" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordion">
+                                        <div class="accordion-body">
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Protahování</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Šermířské výpady</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Šermířské kroky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Koordinační cvičení</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Rovnováha</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání panáka</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes překážky</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Medvědí chůze</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Krabí chůze</span>
+                                                <span class="badge bg-secondary exercise-item" data-target="{{ form.exercises.id_for_label }}" style="cursor: pointer;" title="Dvojklik pro přidání">Váha na jedné noze</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3 form-check">
                         {{ form.is_public }}
@@ -93,6 +224,137 @@
                         <div class="mb-3">
                             <label for="editExercises{{ circuit.id }}" class="form-label">Cvičení (každé na nový řádek)</label>
                             <textarea class="form-control" id="editExercises{{ circuit.id }}" name="exercises" rows="10" required>{{ circuit.exercises|default_if_none:'' }}</textarea>
+                            <small class="form-text text-muted d-block mt-1">Dvojklik na cvičení níže ho přidá do seznamu</small>
+                            
+                            <!-- Exercise selector for edit form -->
+                            <div class="mt-3 border rounded p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                                <div class="accordion" id="exerciseAccordionEdit{{ circuit.id }}">
+                                    <!-- Nohy -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingNohyEdit{{ circuit.id }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNohyEdit{{ circuit.id }}">
+                                                Nohy
+                                            </button>
+                                        </h2>
+                                        <div id="collapseNohyEdit{{ circuit.id }}" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordionEdit{{ circuit.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Dřepy</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skoky na místě</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výskoky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh na místě</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady do strany</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Dřepy na jedné noze</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady vzad</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes švihadlo</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Výpady s výskokem</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Břicho -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingBrichoEdit{{ circuit.id }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBrichoEdit{{ circuit.id }}">
+                                                Břicho
+                                            </button>
+                                        </h2>
+                                        <div id="collapseBrichoEdit{{ circuit.id }}" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordionEdit{{ circuit.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Sedy-lehy</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Plank</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání nohou</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Ruské otočky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zkracovačky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Plank na boku</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Horské lezení</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání kolen</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Nůžky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Váha</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Záda -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingZadaEdit{{ circuit.id }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseZadaEdit{{ circuit.id }}">
+                                                Záda
+                                            </button>
+                                        </h2>
+                                        <div id="collapseZadaEdit{{ circuit.id }}" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordionEdit{{ circuit.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Hyperextenze</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Superman</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Prkno</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky na široko</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky na úzko</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Diamantové kliky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Kliky s tlesknutím</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Přítahy</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Zvedání trupu</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Výdrž -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingVydrzEdit{{ circuit.id }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseVydrzEdit{{ circuit.id }}">
+                                                Výdrž
+                                            </button>
+                                        </h2>
+                                        <div id="collapseVydrzEdit{{ circuit.id }}" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordionEdit{{ circuit.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh na místě</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes švihadlo</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Burpees</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Mountain climbers</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh s vysokými koleny</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh s kopáním do zadku</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání žabáků</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Běh pozpátku</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Intervalový běh</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Ostatní -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingOstatniEdit{{ circuit.id }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOstatniEdit{{ circuit.id }}">
+                                                Ostatní
+                                            </button>
+                                        </h2>
+                                        <div id="collapseOstatniEdit{{ circuit.id }}" class="accordion-collapse collapse" data-bs-parent="#exerciseAccordionEdit{{ circuit.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Protahování</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Šermířské výpady</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Šermířské kroky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Koordinační cvičení</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Rovnováha</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání panáka</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Skákání přes překážky</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Medvědí chůze</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Krabí chůze</span>
+                                                    <span class="badge bg-secondary exercise-item-edit" data-target="editExercises{{ circuit.id }}" style="cursor: pointer;" title="Dvojklik pro přidání">Váha na jedné noze</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="editPublic{{ circuit.id }}" name="is_public" {% if circuit.is_public %}checked{% endif %}>
@@ -115,5 +377,55 @@
         {% endfor %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle double-click for new form exercise items
+    document.querySelectorAll('.exercise-item').forEach(function(item) {
+        item.addEventListener('dblclick', function() {
+            const exerciseName = this.textContent.trim();
+            const targetId = this.getAttribute('data-target');
+            const textarea = document.getElementById(targetId);
+            
+            if (textarea) {
+                let currentValue = textarea.value.trim();
+                if (currentValue) {
+                    textarea.value = currentValue + '\n' + exerciseName;
+                } else {
+                    textarea.value = exerciseName;
+                }
+                // Visual feedback
+                this.style.backgroundColor = '#28a745';
+                setTimeout(() => {
+                    this.style.backgroundColor = '';
+                }, 300);
+            }
+        });
+    });
+    
+    // Handle double-click for edit form exercise items
+    document.querySelectorAll('.exercise-item-edit').forEach(function(item) {
+        item.addEventListener('dblclick', function() {
+            const exerciseName = this.textContent.trim();
+            const targetId = this.getAttribute('data-target');
+            const textarea = document.getElementById(targetId);
+            
+            if (textarea) {
+                let currentValue = textarea.value.trim();
+                if (currentValue) {
+                    textarea.value = currentValue + '\n' + exerciseName;
+                } else {
+                    textarea.value = exerciseName;
+                }
+                // Visual feedback
+                this.style.backgroundColor = '#28a745';
+                setTimeout(() => {
+                    this.style.backgroundColor = '';
+                }, 300);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
 

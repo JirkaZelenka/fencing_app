@@ -72,7 +72,7 @@
             <!-- Upload Photo to Existing Subalbum -->
             {% if subalbums %}
             <div>
-                <h6>Nahrát fotku do subalba</h6>
+                <h6>Nahrát fotky do subalba</h6>
                 {% for subalbum in subalbums %}
                 <div class="card mb-2">
                     <div class="card-body">
@@ -81,13 +81,14 @@
                             {% csrf_token %}
                             <div class="row">
                                 <div class="col-md-4 mb-2">
-                                    <input type="file" class="form-control" name="photo" accept="image/*" required>
+                                    <input type="file" class="form-control" name="photo" accept="image/*" multiple required>
+                                    <small class="text-muted">Můžete vybrat více fotek najednou</small>
                                 </div>
                                 <div class="col-md-3 mb-2">
-                                    <input type="text" class="form-control" name="title" placeholder="Název (volitelné)">
+                                    <input type="text" class="form-control" name="title" placeholder="Název (volitelné, použije se pro všechny)">
                                 </div>
                                 <div class="col-md-3 mb-2">
-                                    <textarea class="form-control" name="description" rows="1" placeholder="Popis (volitelný)"></textarea>
+                                    <textarea class="form-control" name="description" rows="1" placeholder="Popis (volitelný, použije se pro všechny)"></textarea>
                                 </div>
                                 <div class="col-md-2 mb-2">
                                     <button type="submit" class="btn btn-sm btn-primary w-100">Nahrát</button>

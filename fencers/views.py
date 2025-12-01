@@ -703,24 +703,30 @@ def upload_photo(request, subalbum_id):
         return redirect('match_profile')
     subalbum = get_object_or_404(SubAlbum.objects.select_related('album'), id=subalbum_id)
     
-    if 'photo' not in request.FILES:
-        messages.error(request, 'Musíte vybrat fotku.')
+    photo_files = request.FILES.getlist('photo')
+    if not photo_files:
+        messages.error(request, 'Musíte vybrat alespoň jednu fotku.')
         return redirect('album_detail', album_id=subalbum.album.id)
     
-    photo_file = request.FILES['photo']
     title = request.POST.get('title', '').strip()
     description = request.POST.get('description', '').strip()
     
-    EventPhoto.objects.create(
-        title=title,
-        description=description,
-        photo=photo_file,
-        event_date=subalbum.album.event.date,
-        uploaded_by=profile,
-        subalbum=subalbum
-    )
+    uploaded_count = 0
+    for photo_file in photo_files:
+        EventPhoto.objects.create(
+            title=title,
+            description=description,
+            photo=photo_file,
+            event_date=subalbum.album.event.date,
+            uploaded_by=profile,
+            subalbum=subalbum
+        )
+        uploaded_count += 1
     
-    messages.success(request, 'Fotka byla nahrána.')
+    if uploaded_count == 1:
+        messages.success(request, 'Fotka byla nahrána.')
+    else:
+        messages.success(request, f'{uploaded_count} fotek bylo nahráno.')
     return redirect('album_detail', album_id=subalbum.album.id)
 
 

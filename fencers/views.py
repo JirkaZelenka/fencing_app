@@ -299,9 +299,11 @@ def about_me(request):
     participation_lookup = {
         p.event_id: p for p in EventParticipation.objects.filter(fencer=profile).select_related('event')
     }
-    event_reactions = set(
-        EventReaction.objects.filter(user=user, will_attend=True).values_list('event_id', flat=True)
-    )
+    event_reactions = set()
+    if profile:
+        event_reactions = set(
+            EventReaction.objects.filter(fencer=profile, will_attend=True).values_list('event_id', flat=True)
+        )
     
     combined_items = []
     for event in all_events:
@@ -554,17 +556,21 @@ def training_notes(request):
 
 @login_required
 def circuit_trainings(request):
-    user = request.user
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
     # Get user's own circuits and public circuits from others
     circuits = CircuitTraining.objects.filter(
-        Q(created_by=user) | Q(is_public=True)
+        Q(created_by=profile) | Q(is_public=True)
     ).prefetch_related('songs').order_by('-created_at')
     
     if request.method == 'POST':
         form = CircuitTrainingForm(request.POST)
         if form.is_valid():
             circuit = form.save(commit=False)
-            circuit.created_by = user
+            circuit.created_by = profile
             circuit.save()
             messages.success(request, 'Masíčko bylo vytvořeno.')
             return redirect('circuit_trainings')
@@ -574,7 +580,7 @@ def circuit_trainings(request):
     context = {
         'circuits': circuits,
         'form': form,
-        'user': user,
+        'user': request.user,
     }
     return render(request, 'fencers/circuit_trainings.html', context)
 
@@ -582,7 +588,11 @@ def circuit_trainings(request):
 @login_required
 @require_POST
 def edit_circuit_training(request, circuit_id):
-    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=request.user)
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=profile)
     form = CircuitTrainingForm(request.POST, instance=circuit)
     if form.is_valid():
         form.save()
@@ -596,7 +606,11 @@ def edit_circuit_training(request, circuit_id):
 @login_required
 @require_POST
 def delete_circuit_training(request, circuit_id):
-    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=request.user)
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    circuit = get_object_or_404(CircuitTraining, id=circuit_id, created_by=profile)
     circuit.delete()
     messages.success(request, 'Masíčko bylo smazáno.')
     return redirect('circuit_trainings')
@@ -644,12 +658,15 @@ def album_detail(request, album_id):
         'subalbum__album',
         'subalbum__album__event',
         'uploaded_by'
-    ).prefetch_related('likes', 'likes__user').order_by('-uploaded_at')
+    ).prefetch_related('likes', 'likes__fencer', 'likes__fencer__user').order_by('-uploaded_at')
     
     # Get user's liked photos for this album
-    user_liked_photo_ids = set(
-        PhotoLike.objects.filter(user=request.user, photo__in=all_photos).values_list('photo_id', flat=True)
-    )
+    profile = getattr(request.user, 'fencer_profile', None)
+    user_liked_photo_ids = set()
+    if profile:
+        user_liked_photo_ids = set(
+            PhotoLike.objects.filter(fencer=profile, photo__in=all_photos).values_list('photo_id', flat=True)
+        )
     
     context = {
         'album': album,
@@ -663,6 +680,10 @@ def album_detail(request, album_id):
 @login_required
 @require_POST
 def create_subalbum(request, album_id):
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
     album = get_object_or_404(PhotoAlbum, id=album_id)
     name = request.POST.get('name', '').strip()
     
@@ -673,7 +694,7 @@ def create_subalbum(request, album_id):
     subalbum = SubAlbum.objects.create(
         album=album,
         name=name,
-        created_by=request.user
+        created_by=profile
     )
     messages.success(request, f'Subalbum "{name}" byl vytvořen.')
     return redirect('album_detail', album_id=album_id)
@@ -682,6 +703,10 @@ def create_subalbum(request, album_id):
 @login_required
 @require_POST
 def upload_photo(request, subalbum_id):
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
     subalbum = get_object_or_404(SubAlbum.objects.select_related('album'), id=subalbum_id)
     
     if 'photo' not in request.FILES:
@@ -697,7 +722,7 @@ def upload_photo(request, subalbum_id):
         description=description,
         photo=photo_file,
         event_date=subalbum.album.event.date,
-        uploaded_by=request.user,
+        uploaded_by=profile,
         subalbum=subalbum
     )
     
@@ -886,8 +911,10 @@ def calendar_events(request):
     # Get user reactions and attach to events
     reaction_dict = {}
     if request.user.is_authenticated and upcoming_events_qs:
-        reactions = EventReaction.objects.filter(user=request.user, event__in=upcoming_events_qs)
-        reaction_dict = {r.event_id: r for r in reactions}
+        profile = getattr(request.user, 'fencer_profile', None)
+        if profile:
+            reactions = EventReaction.objects.filter(fencer=profile, event__in=upcoming_events_qs)
+            reaction_dict = {r.event_id: r for r in reactions}
     
     # Get user participation for upcoming and past events
     upcoming_event_ids = list(upcoming_events_qs.values_list('id', flat=True))
@@ -971,10 +998,15 @@ def calendar_events(request):
 @login_required
 @require_POST
 def event_reaction(request, event_id):
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
     event = get_object_or_404(Event, id=event_id)
     reaction, created = EventReaction.objects.get_or_create(
         event=event,
-        user=request.user,
+        fencer=profile,
         defaults={'will_attend': False}
     )
     
@@ -1211,11 +1243,15 @@ def equipment(request):
 @require_POST
 def toggle_photo_like(request, photo_id):
     """Toggle like/unlike for a photo"""
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        return JsonResponse({'success': False, 'error': 'Nejprve se prosím přiřaďte k profilu.'})
+    
     photo = get_object_or_404(EventPhoto, id=photo_id)
     
     like, created = PhotoLike.objects.get_or_create(
         photo=photo,
-        user=request.user
+        fencer=profile
     )
     
     if not created:
@@ -1228,13 +1264,16 @@ def toggle_photo_like(request, photo_id):
     
     like_count = photo.get_like_count()
     recent_likes = list(
-        photo.likes.select_related('user').order_by('-created_at')[:5]
+        photo.likes.select_related('fencer', 'fencer__user').order_by('-created_at')[:5]
     )
-    liked_users = [
-        like.user.get_full_name() or like.user.username
-        for like in recent_likes
-        if like.user
-    ]
+    liked_users = []
+    for like_obj in recent_likes:
+        if like_obj.fencer:
+            if like_obj.fencer.user:
+                liked_users.append(like_obj.fencer.user.get_full_name() or like_obj.fencer.user.username)
+            else:
+                name = f"{like_obj.fencer.first_name} {like_obj.fencer.last_name}".strip()
+                liked_users.append(name or f"Profil #{like_obj.fencer.id}")
     remaining_likes = max(like_count - len(liked_users), 0)
     
     return JsonResponse({
@@ -1249,15 +1288,20 @@ def toggle_photo_like(request, photo_id):
 @login_required
 def my_favorite_photos(request):
     """View for 'Moje oblíbené' - user's liked photos"""
-    # Get all photos liked by the current user
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
+        return redirect('match_profile')
+    
+    # Get all photos liked by the current fencer
     liked_photos = EventPhoto.objects.filter(
-        likes__user=request.user
+        likes__fencer=profile
     ).select_related(
         'subalbum',
         'subalbum__album',
         'subalbum__album__event',
         'uploaded_by'
-    ).prefetch_related('likes', 'likes__user').distinct().order_by('-likes__created_at')
+    ).prefetch_related('likes', 'likes__fencer', 'likes__fencer__user').distinct().order_by('-likes__created_at')
     
     user_liked_photo_ids = set([photo.id for photo in liked_photos])
     
@@ -1273,6 +1317,8 @@ def my_favorite_photos(request):
 @login_required
 def most_liked_photos(request):
     """View for 'Nejoblíbenější fotky' - most liked photos (at least 1 like)"""
+    profile = getattr(request.user, 'fencer_profile', None)
+    
     # Get all photos with at least 1 like, ordered by like count
     liked_photos = EventPhoto.objects.annotate(
         like_count=Count('likes')
@@ -1283,11 +1329,13 @@ def most_liked_photos(request):
         'subalbum__album',
         'subalbum__album__event',
         'uploaded_by'
-    ).prefetch_related('likes', 'likes__user').order_by('-like_count', '-uploaded_at')
+    ).prefetch_related('likes', 'likes__fencer', 'likes__fencer__user').order_by('-like_count', '-uploaded_at')
     
-    user_liked_photo_ids = set(
-        PhotoLike.objects.filter(user=request.user, photo__in=liked_photos).values_list('photo_id', flat=True)
-    )
+    user_liked_photo_ids = set()
+    if profile:
+        user_liked_photo_ids = set(
+            PhotoLike.objects.filter(fencer=profile, photo__in=liked_photos).values_list('photo_id', flat=True)
+        )
     
     context = {
         'all_photos': liked_photos,
@@ -1301,10 +1349,13 @@ def most_liked_photos(request):
 @login_required
 def news_list(request):
     """API endpoint to get list of news items for dropdown"""
+    profile = getattr(request.user, 'fencer_profile', None)
     all_news = News.objects.all().order_by('-date', '-created_at')
-    read_news_ids = set(
-        NewsRead.objects.filter(user=request.user).values_list('news_id', flat=True)
-    )
+    read_news_ids = set()
+    if profile:
+        read_news_ids = set(
+            NewsRead.objects.filter(fencer=profile).values_list('news_id', flat=True)
+        )
     
     news_data = []
     for news in all_news:
@@ -1325,8 +1376,11 @@ def news_list(request):
 @login_required
 def news_detail(request, news_id):
     """API endpoint to get single news item for popup"""
+    profile = getattr(request.user, 'fencer_profile', None)
     news = get_object_or_404(News, id=news_id)
-    is_read = NewsRead.objects.filter(news=news, user=request.user).exists()
+    is_read = False
+    if profile:
+        is_read = NewsRead.objects.filter(news=news, fencer=profile).exists()
     
     return JsonResponse({
         'id': news.id,
@@ -1341,13 +1395,17 @@ def news_detail(request, news_id):
 @require_POST
 def mark_news_read(request, news_id):
     """API endpoint to mark news as read"""
+    profile = getattr(request.user, 'fencer_profile', None)
+    if not profile:
+        return JsonResponse({'success': False, 'error': 'Nejprve se prosím přiřaďte k profilu.'})
+    
     news = get_object_or_404(News, id=news_id)
-    NewsRead.objects.get_or_create(news=news, user=request.user)
+    NewsRead.objects.get_or_create(news=news, fencer=profile)
     
     # Return updated unread count
     all_news = News.objects.all()
     read_news_ids = set(
-        NewsRead.objects.filter(user=request.user).values_list('news_id', flat=True)
+        NewsRead.objects.filter(fencer=profile).values_list('news_id', flat=True)
     )
     unread_count = all_news.exclude(id__in=read_news_ids).count()
     

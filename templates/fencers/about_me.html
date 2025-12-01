@@ -34,6 +34,9 @@
                             <p><strong>Telefon:</strong> {{ profile.phone }}</p>
                         {% endif %}
                     {% endif %}
+                    <div class="mt-3">
+                        <a href="{% url 'password_change' %}" class="btn btn-sm btn-outline-secondary">Změnit heslo</a>
+                    </div>
                 </div>
             </div>
         </div>

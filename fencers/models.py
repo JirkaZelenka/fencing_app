@@ -143,7 +143,7 @@ class CircuitTraining(models.Model):
     name = models.CharField(max_length=200, verbose_name="Název sestavy")
     description = models.TextField(blank=True, verbose_name="Popis")
     exercises = models.TextField(verbose_name="Cvičení (každé na nový řádek)")
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circuit_trainings', verbose_name="Vytvořil")
+    created_by = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='circuit_trainings', verbose_name="Vytvořil")
     created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=False, verbose_name="Veřejné")
     
@@ -185,7 +185,7 @@ class PhotoAlbum(models.Model):
 class SubAlbum(models.Model):
     album = models.ForeignKey(PhotoAlbum, on_delete=models.CASCADE, related_name='subalbums', verbose_name="Album")
     name = models.CharField(max_length=200, verbose_name="Název")
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
+    created_by = models.ForeignKey(FencerProfile, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -202,7 +202,7 @@ class EventPhoto(models.Model):
     description = models.TextField(blank=True, verbose_name="Popis")
     photo = models.ImageField(upload_to='event_photos/', verbose_name="Fotka")
     event_date = models.DateField(null=True, blank=True, verbose_name="Datum akce")
-    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Nahrál")
+    uploaded_by = models.ForeignKey(FencerProfile, on_delete=models.SET_NULL, null=True, verbose_name="Nahrál")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_featured = models.BooleanField(default=False, verbose_name="Doporučená")
     subalbum = models.ForeignKey(SubAlbum, on_delete=models.CASCADE, related_name='photos', null=True, blank=True, verbose_name="Subalbum")
@@ -216,31 +216,31 @@ class EventPhoto(models.Model):
         """Get the number of likes for this photo"""
         return self.likes.count()
     
-    def is_liked_by_user(self, user):
-        """Check if a user has liked this photo"""
-        if not user.is_authenticated:
+    def is_liked_by_fencer(self, fencer):
+        """Check if a fencer has liked this photo"""
+        if not fencer:
             return False
-        return self.likes.filter(user=user).exists()
+        return self.likes.filter(fencer=fencer).exists()
 
 
 class PhotoLike(models.Model):
     photo = models.ForeignKey(EventPhoto, on_delete=models.CASCADE, related_name='likes', verbose_name="Fotka")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='photo_likes', verbose_name="Uživatel")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='photo_likes', verbose_name="Šermíř")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         verbose_name = "Líbí se mi"
         verbose_name_plural = "Líbí se mi"
-        unique_together = ['photo', 'user']
+        unique_together = ['photo', 'fencer']
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.user.username} likes {self.photo.title}"
+        return f"{self.fencer} likes {self.photo.title}"
 
 
 class EventReaction(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='reactions', verbose_name="Akce")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_reactions', verbose_name="Uživatel")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='event_reactions', verbose_name="Šermíř")
     will_attend = models.BooleanField(default=False, verbose_name="Zúčastním se")
     comment = models.TextField(blank=True, verbose_name="Komentář")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -248,7 +248,7 @@ class EventReaction(models.Model):
     class Meta:
         verbose_name = "Reakce na akci"
         verbose_name_plural = "Reakce na akce"
-        unique_together = ['event', 'user']
+        unique_together = ['event', 'fencer']
 
 
 class PaymentStatus(models.Model):
@@ -327,7 +327,7 @@ class News(models.Model):
     title = models.CharField(max_length=200, verbose_name="Nadpis")
     text = models.TextField(verbose_name="Text")
     date = models.DateField(verbose_name="Datum")
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
+    created_by = models.ForeignKey(FencerProfile, on_delete=models.SET_NULL, null=True, verbose_name="Vytvořil")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Vytvořeno")
     
     class Meta:
@@ -341,15 +341,15 @@ class News(models.Model):
 
 class NewsRead(models.Model):
     news = models.ForeignKey(News, on_delete=models.CASCADE, related_name='reads', verbose_name="Novinka")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='news_reads', verbose_name="Uživatel")
+    fencer = models.ForeignKey(FencerProfile, on_delete=models.CASCADE, related_name='news_reads', verbose_name="Šermíř")
     read_at = models.DateTimeField(auto_now_add=True, verbose_name="Přečteno")
     
     class Meta:
         verbose_name = "Přečtená novinka"
         verbose_name_plural = "Přečtené novinky"
-        unique_together = ['news', 'user']
+        unique_together = ['news', 'fencer']
         ordering = ['-read_at']
     
     def __str__(self):
-        return f"{self.user.username} read {self.news.title}"
+        return f"{self.fencer} read {self.news.title}"
 

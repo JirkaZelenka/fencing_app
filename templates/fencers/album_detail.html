@@ -121,7 +121,7 @@
                          data-photo-title="{{ photo.title|default:'' }}"
                          data-photo-description="{{ photo.description|default:'' }}"
                          data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
-                         data-photo-uploader="{{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}"
+                         data-photo-uploader="{% if photo.uploaded_by.user %}{{ photo.uploaded_by.user.get_full_name|default:photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}"
                          style="height: 200px; object-fit: cover; cursor: pointer;">
                     {% with like_list=photo.likes.all %}
                     <div class="photo-like-wrapper position-absolute top-0 end-0 m-2" style="z-index: 10;">
@@ -136,8 +136,12 @@
                         <div class="photo-like-tooltip" data-photo-id="{{ photo.id }}" {% if like_list|length == 0 %}style="display: none;"{% endif %}>
                             <div class="photo-like-tooltip-content">
                                 {% for like in like_list|slice:":5" %}
-                                    {% if like.user %}
-                                    <div class="photo-like-user">{{ like.user.get_full_name|default:like.user.username }}</div>
+                                    {% if like.fencer %}
+                                        {% if like.fencer.user %}
+                                        <div class="photo-like-user">{{ like.fencer.user.get_full_name|default:like.fencer.user.username }}</div>
+                                        {% else %}
+                                        <div class="photo-like-user">{{ like.fencer.first_name }} {{ like.fencer.last_name }}</div>
+                                        {% endif %}
                                     {% endif %}
                                 {% endfor %}
                                 {% if like_list|length > 5 %}
@@ -167,7 +171,7 @@
                     </div>
                     <div class="mt-1">
                         <small class="text-muted">
-                            {{ photo.uploaded_by.get_full_name|default:photo.uploaded_by.username }}
+                            {% if photo.uploaded_by.user %}{{ photo.uploaded_by.user.get_full_name|default:photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}
                         </small>
                     </div>
                 </div>
@@ -219,7 +223,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ subalbum.name }}</h5>
-                        <small class="text-muted">Vytvořil: {{ subalbum.created_by.get_full_name|default:subalbum.created_by.username }}</small>
+                        <small class="text-muted">Vytvořil: {% if subalbum.created_by.user %}{{ subalbum.created_by.user.get_full_name|default:subalbum.created_by.user.username }}{% else %}{{ subalbum.created_by.first_name }} {{ subalbum.created_by.last_name }}{% endif %}</small>
                     </div>
                     <div class="card-body">
                         <div class="row">

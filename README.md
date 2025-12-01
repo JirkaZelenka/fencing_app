@@ -35,14 +35,11 @@ Funkce (jednotlivé stránky):
 TODO:
 
 - bodíky za turnaj - pitomý  sloupec se neukazuje na jedné tabulce - Klubs
-- rok narození do Profilu
-- odebrat pohlaví z Profilu
-- možnost prokliknout lidi z Klubu a vidět jejich profil náhled
 
+-> dodělat, nastavit ENV
 - moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
-připravit všem profily, jen naskočit...
 
-- fotky, subalab a lajky převést na Fencera, nikoliv nechávat na uživateli - aby to bylo trvalejší
+DONE: fotky, subalab a lajky převést na Fencera, nikoliv nechávat na uživateli - aby to bylo trvalejší
 
 
 -----------------------------------

@@ -150,9 +150,9 @@ class EventPhotoAdmin(admin.ModelAdmin):
 
 @admin.register(PhotoLike)
 class PhotoLikeAdmin(admin.ModelAdmin):
-    list_display = ['photo', 'user', 'created_at']
+    list_display = ['photo', 'fencer', 'created_at']
     list_filter = ['created_at']
-    search_fields = ['photo__title', 'user__username']
+    search_fields = ['photo__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
 
 
 @admin.register(Event)
@@ -174,9 +174,9 @@ class EventAdmin(admin.ModelAdmin):
 
 @admin.register(EventReaction)
 class EventReactionAdmin(admin.ModelAdmin):
-    list_display = ['event', 'user', 'will_attend', 'created_at']
+    list_display = ['event', 'fencer', 'will_attend', 'created_at']
     list_filter = ['will_attend', 'created_at']
-    search_fields = ['event__title', 'user__username']
+    search_fields = ['event__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
 
 
 @admin.register(PaymentStatus)
@@ -248,13 +248,15 @@ class NewsAdmin(admin.ModelAdmin):
     
     def save_model(self, request, obj, form, change):
         if not change:  # Only set created_by on creation
-            obj.created_by = request.user
+            # Get or create fencer profile for the user
+            if hasattr(request.user, 'fencer_profile') and request.user.fencer_profile:
+                obj.created_by = request.user.fencer_profile
         super().save_model(request, obj, form, change)
 
 
 @admin.register(NewsRead)
 class NewsReadAdmin(admin.ModelAdmin):
-    list_display = ['news', 'user', 'read_at']
+    list_display = ['news', 'fencer', 'read_at']
     list_filter = ['read_at']
-    search_fields = ['news__title', 'user__username']
+    search_fields = ['news__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
     readonly_fields = ['read_at']

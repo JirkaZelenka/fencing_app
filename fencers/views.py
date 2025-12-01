@@ -219,16 +219,9 @@ def match_profile(request):
             profile.user = request.user
             profile.save()
             
-            # Update user's name if profile has name info
-            if profile.first_name and not request.user.first_name:
-                request.user.first_name = profile.first_name
-            if profile.last_name and not request.user.last_name:
-                request.user.last_name = profile.last_name
-            if profile.email and not request.user.email:
-                request.user.email = profile.email
-            request.user.save()
-            
-            messages.success(request, f'Profil byl úspěšně přiřazen! Vítejte, {request.user.get_full_name() or request.user.username}.')
+            # Get display name from profile or username
+            display_name = f"{profile.first_name} {profile.last_name}".strip() if (profile.first_name or profile.last_name) else request.user.username
+            messages.success(request, f'Profil byl úspěšně přiřazen! Vítejte, {display_name}.')
             return redirect('home')
         except FencerProfile.DoesNotExist:
             messages.error(request, 'Vybraný profil neexistuje nebo již byl přiřazen.')
@@ -361,7 +354,8 @@ def member_detail_api(request, profile_id):
         
         # Get member name
         if profile.user:
-            name = profile.user.get_full_name() or profile.user.username
+            # Prefer fencer profile name, fallback to username
+            name = profile.get_full_name() or profile.user.username
             username = profile.user.username
         else:
             name = f"{profile.first_name} {profile.last_name}".strip() or "Nepřiřazený profil"
@@ -1097,7 +1091,8 @@ def payment_status(request):
 @require_POST
 def notify_payment(request):
     """Send notification to all admins that user has paid"""
-    from django.contrib.auth.models import User
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
     
     user = request.user
     profile = getattr(user, 'fencer_profile', None)
@@ -1115,7 +1110,9 @@ def notify_payment(request):
     
     # In a real application, you would send emails here
     # For now, we'll just mark as notified and return success
-    user_name = user.get_full_name() or user.username
+    # Prefer fencer profile name if available
+    profile = getattr(user, 'fencer_profile', None)
+    user_name = profile.get_full_name() if profile else user.username
     admin_count = admin_users.count()
     
     return JsonResponse({
@@ -1269,11 +1266,9 @@ def toggle_photo_like(request, photo_id):
     liked_users = []
     for like_obj in recent_likes:
         if like_obj.fencer:
-            if like_obj.fencer.user:
-                liked_users.append(like_obj.fencer.user.get_full_name() or like_obj.fencer.user.username)
-            else:
-                name = f"{like_obj.fencer.first_name} {like_obj.fencer.last_name}".strip()
-                liked_users.append(name or f"Profil #{like_obj.fencer.id}")
+            # Use fencer profile name
+            name = like_obj.fencer.get_full_name() or (like_obj.fencer.user.username if like_obj.fencer.user else f"Profil #{like_obj.fencer.id}")
+            liked_users.append(name)
     remaining_likes = max(like_count - len(liked_users), 0)
     
     return JsonResponse({

@@ -1,13 +1,31 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
+from django import forms
 from .models import (
-    Club, FencerProfile, Event, EventParticipation,
+    User, Club, FencerProfile, Event, EventParticipation,
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
     EventReaction, PaymentStatus, GlossaryTerm,
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
     PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
+
+
+class IsPairedFilter(admin.SimpleListFilter):
+    """Custom filter for is_paired status"""
+    title = 'Přiřazeno'
+    parameter_name = 'is_paired'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', 'Ano'),
+            ('no', 'Ne'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.filter(user__isnull=False)
+        if self.value() == 'no':
+            return queryset.filter(user__isnull=True)
 
 
 class FencerProfileInline(admin.StackedInline):
@@ -17,30 +35,77 @@ class FencerProfileInline(admin.StackedInline):
     fields = ('club', 'phone', 'gender')
 
 
+class UserChangeForm(forms.ModelForm):
+    """Custom form for changing user"""
+    class Meta:
+        model = User
+        fields = '__all__'
+
+
+class UserCreationForm(forms.ModelForm):
+    """Custom form for creating user"""
+    password1 = forms.CharField(label='Password', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords don't match")
+        return password2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        if commit:
+            user.save()
+        return user
+
+
 class UserAdmin(BaseUserAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
     inlines = (FencerProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'get_club', 'is_staff')
+    list_display = ('username', 'email', 'is_staff', 'is_superuser')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
-    search_fields = ('username', 'first_name', 'last_name', 'email')
+    search_fields = ('username', 'email')
     
-    def get_club(self, obj):
-        if hasattr(obj, 'fencer_profile') and obj.fencer_profile.club:
-            return obj.fencer_profile.club.name
-        return '-'
-    get_club.short_description = 'Klub'
+    # Only show username, email, and admin-related fields
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('email',)}),
+        ('Permissions', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+        ('Important dates', {'fields': ('last_login',)}),
+    )
+    readonly_fields = ('date_joined', 'last_login')
+    
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2'),
+        }),
+    )
 
 
-admin.site.unregister(User)
+# Register custom User model
+# Since we're using AUTH_USER_MODEL, Django won't auto-register the default User model
+# So we just register our custom User model directly
 admin.site.register(User, UserAdmin)
 
 
 @admin.register(FencerProfile)
 class FencerProfileAdmin(admin.ModelAdmin):
-    list_display = ['get_display_name', 'user', 'club', 'gender', 'birth_year', 'phone', 'get_user_email', 'is_matched']
-    list_filter = ['club', 'user', 'gender']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email', 'first_name', 'last_name', 'email', 'phone']
+    list_display = ['first_name', 'last_name', 'user', 'club', 'gender', 'birth_year', 'phone', 'get_user_email', 'is_paired']
+    list_filter = ['club', 'gender', IsPairedFilter]
+    search_fields = ['user__username', 'user__email', 'first_name', 'last_name', 'phone']
     autocomplete_fields = ['user']
-    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name', 'email')
+    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name')
     actions = ['unpair_selected_profiles']
     
     def unpair_selected_profiles(self, request, queryset):
@@ -54,23 +119,16 @@ class FencerProfileAdmin(admin.ModelAdmin):
         self.message_user(request, f'{count} profilů bylo odpojeno od uživatelů.')
     unpair_selected_profiles.short_description = 'Odpojit vybrané profily od uživatelů'
     
-    def get_display_name(self, obj):
-        if obj.user:
-            return obj.user.get_full_name() or obj.user.username
-        name = f"{obj.first_name} {obj.last_name}".strip()
-        return name or f"Profil #{obj.id}"
-    get_display_name.short_description = 'Jméno'
-    
     def get_user_email(self, obj):
         if obj.user:
             return obj.user.email
-        return obj.email or '-'
+        return '-'
     get_user_email.short_description = 'Email'
     
-    def is_matched(self, obj):
-        return bool(obj.user)
-    is_matched.short_description = 'Přiřazeno'
-    is_matched.boolean = True
+    def is_paired(self, obj):
+        return obj.is_paired
+    is_paired.short_description = 'Přiřazeno'
+    is_paired.boolean = True
 
 
 @admin.register(Club)
@@ -87,12 +145,12 @@ class ClubAdmin(admin.ModelAdmin):
 class EventParticipationAdmin(admin.ModelAdmin):
     list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses', 'points']
     list_filter = ['event', 'event__date']
-    search_fields = ['fencer__user__username', 'fencer__user__first_name', 'fencer__user__last_name', 'fencer__first_name', 'fencer__last_name', 'event__title']
+    search_fields = ['fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name', 'event__title']
     autocomplete_fields = ['fencer']
     
     def get_fencer_name(self, obj):
         if obj.fencer.user:
-            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+            return obj.fencer.user.username
         return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
     get_fencer_name.short_description = 'Šermíř'
 
@@ -101,12 +159,12 @@ class EventParticipationAdmin(admin.ModelAdmin):
 class TrainingNoteAdmin(admin.ModelAdmin):
     list_display = ['get_fencer_name', 'date', 'created_at']
     list_filter = ['date', 'created_at']
-    search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name', 'notes']
+    search_fields = ['fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name', 'notes']
     autocomplete_fields = ['fencer']
     
     def get_fencer_name(self, obj):
         if obj.fencer.user:
-            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+            return obj.fencer.user.username
         return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
     get_fencer_name.short_description = 'Šermíř'
 
@@ -152,7 +210,7 @@ class EventPhotoAdmin(admin.ModelAdmin):
 class PhotoLikeAdmin(admin.ModelAdmin):
     list_display = ['photo', 'fencer', 'created_at']
     list_filter = ['created_at']
-    search_fields = ['photo__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
+    search_fields = ['photo__title', 'fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name']
 
 
 @admin.register(Event)
@@ -176,20 +234,20 @@ class EventAdmin(admin.ModelAdmin):
 class EventReactionAdmin(admin.ModelAdmin):
     list_display = ['event', 'fencer', 'will_attend', 'created_at']
     list_filter = ['will_attend', 'created_at']
-    search_fields = ['event__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
+    search_fields = ['event__title', 'fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name']
 
 
 @admin.register(PaymentStatus)
 class PaymentStatusAdmin(admin.ModelAdmin):
     list_display = ['get_fencer_name', 'is_paid', 'payment_notified', 'payment_date', 'amount']
     list_filter = ['is_paid', 'payment_notified', 'payment_date']
-    search_fields = ['fencer__user__username', 'fencer__first_name', 'fencer__last_name']
+    search_fields = ['fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name']
     autocomplete_fields = ['fencer']
     fields = ('fencer', 'is_paid', 'payment_date', 'amount', 'payment_notified', 'qr_code', 'payment_info')
     
     def get_fencer_name(self, obj):
         if obj.fencer.user:
-            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+            return obj.fencer.user.username
         return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
     get_fencer_name.short_description = 'Šermíř'
 
@@ -229,7 +287,7 @@ class UserEquipmentAdmin(admin.ModelAdmin):
     
     def get_fencer_name(self, obj):
         if obj.fencer.user:
-            return obj.fencer.user.get_full_name() or obj.fencer.user.username
+            return obj.fencer.user.username
         return f"{obj.fencer.first_name} {obj.fencer.last_name}".strip() or f"Profil #{obj.fencer.id}"
     get_fencer_name.short_description = 'Šermíř'
 
@@ -258,5 +316,5 @@ class NewsAdmin(admin.ModelAdmin):
 class NewsReadAdmin(admin.ModelAdmin):
     list_display = ['news', 'fencer', 'read_at']
     list_filter = ['read_at']
-    search_fields = ['news__title', 'fencer__user__username', 'fencer__first_name', 'fencer__last_name']
+    search_fields = ['news__title', 'fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name']
     readonly_fields = ['read_at']

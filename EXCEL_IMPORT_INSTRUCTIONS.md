@@ -25,20 +25,22 @@ This sheet contains user and fencer profile information.
 
 | Column Name | Required | Description | Example |
 |------------|----------|-------------|---------|
-| `username` | Optional* | Django username | `john.doe` |
-| `email` | Optional* | Email address | `john@example.com` |
-| `first_name` | Optional* | First name | `John` |
-| `last_name` | Optional* | Last name | `Doe` |
-| `club_name` | Optional | Name of the club | `Fencing Club Prague` |
-| `phone` | Optional | Phone number | `+420123456789` |
-| `gender` | Optional | Gender (M, Z, or Ž) | `M` |
-| `birth_year` | Optional | Year of birth | `2000` |
+| `username` | Optional* | Django username (for User model) | `john.doe` |
+| `email` | Optional* | Email address (for User model) | `john@example.com` |
+| `first_name` | Optional* | First name (for FencerProfile) | `John` |
+| `last_name` | Optional* | Last name (for FencerProfile) | `Doe` |
+| `club_name` | Optional | Name of the club (for FencerProfile) | `Fencing Club Prague` |
+| `phone` | Optional | Phone number (for FencerProfile) | `+420123456789` |
+| `gender` | Optional | Gender (M, Z, or Ž) (for FencerProfile) | `M` |
+| `birth_year` | Optional | Year of birth (for FencerProfile) | `2000` |
 
 *At least one of `username`, `email`, or both `first_name` and `last_name` must be provided.
 
 **Notes:**
+- **User model** (authentication): Only `username` and `email` are stored here. Admin status is managed separately.
+- **FencerProfile model** (fencer data): `first_name`, `last_name`, `club_name`, `phone`, `gender`, and `birth_year` are stored in the FencerProfile, which is linked to the User via a 1:1 relationship.
 - If a user with the same username or email already exists, it will be used (not duplicated).
-- If `--create-users` flag is used and user doesn't exist, a new user will be created.
+- If `--create-users` flag is used and user doesn't exist, a new user will be created with only username and email.
 - If username is missing but name is provided, username will be auto-generated.
 - Clubs will be created automatically if they don't exist.
 
@@ -109,9 +111,10 @@ python manage.py import_from_excel path/to/your/file.xlsx --create-users
 ```
 
 This will:
-- Create new User accounts for users that don't exist
+- Create new User accounts for users that don't exist (with username and email only)
 - Auto-generate usernames if not provided
 - Create email addresses if not provided (format: `username@example.com`)
+- Create FencerProfile records with all fencer-specific data (name, club, phone, gender, birth_year)
 
 ### Dry Run (Test Without Saving)
 

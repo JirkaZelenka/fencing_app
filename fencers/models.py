@@ -1,6 +1,58 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.urls import reverse
+
+
+class UserManager(BaseUserManager):
+    """Custom user manager for User model without first_name/last_name"""
+    
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not username:
+            raise ValueError('The Username field must be set')
+        email = self.normalize_email(email) if email else None
+        user = self.model(username=username, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(username, email, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """Custom User model with only username, email, and admin fields"""
+    username = models.CharField(max_length=150, unique=True, verbose_name="Uživatelské jméno")
+    email = models.EmailField(blank=True, null=True, verbose_name="Email")
+    is_staff = models.BooleanField(default=False, verbose_name="Je zaměstnanec")
+    is_active = models.BooleanField(default=True, verbose_name="Je aktivní")
+    date_joined = models.DateTimeField(auto_now_add=True, verbose_name="Datum registrace")
+    last_login = models.DateTimeField(blank=True, null=True, verbose_name="Poslední přihlášení")
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []  # email is optional
+
+    class Meta:
+        verbose_name = "Uživatel"
+        verbose_name_plural = "Uživatelé"
+        db_table = 'auth_user'  # Use same table name for compatibility
+
+    def get_full_name(self):
+        """Returns username since we don't have first_name/last_name.
+        Use fencer_profile.get_full_name() for actual name."""
+        return self.username
+    
+    def __str__(self):
+        return self.username
 
 
 class Club(models.Model):
@@ -32,12 +84,22 @@ class FencerProfile(models.Model):
     # Optional fields to help identify the profile before user matching
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
-    email = models.EmailField(blank=True, verbose_name="Email")
     birth_year = models.IntegerField(null=True, blank=True, verbose_name="Rok narození")
+    
+    def get_full_name(self):
+        """Returns full name as 'Jméno Příjmení'"""
+        return f"{self.first_name} {self.last_name}".strip()
+    
+    @property
+    def is_paired(self):
+        """Returns True if this fencer profile is paired with a user (1:1 relationship)"""
+        return self.user is not None
     
     def __str__(self):
         if self.user:
-            return f"{self.user.get_full_name() or self.user.username} ({self.club})"
+            # Use profile name if available, otherwise username
+            name = f"{self.first_name} {self.last_name}".strip() if (self.first_name or self.last_name) else self.user.username
+            return f"{name} ({self.club})"
         name = f"{self.first_name} {self.last_name}".strip() or "Nepřiřazený profil"
         return f"{name} ({self.club})"
     

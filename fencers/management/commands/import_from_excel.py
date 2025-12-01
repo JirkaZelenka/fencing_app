@@ -10,12 +10,14 @@ Usage:
 
 import os
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from openpyxl import load_workbook
 from datetime import datetime
 
 from fencers.models import FencerProfile, Club, Event, EventParticipation
+
+User = get_user_model()
 
 
 class Command(BaseCommand):
@@ -194,7 +196,9 @@ class Command(BaseCommand):
         return participations_data
 
     def _import_users(self, users_data, create_users, dry_run):
-        """Import users and return mapping of username/email to User object."""
+        """Import users and return mapping of username/email to User object.
+        Only creates User if username or email is provided. If only name/surname,
+        User will be None and FencerProfile will be created without user pairing."""
         user_mapping = {}
         
         for user_data in users_data:
@@ -202,6 +206,13 @@ class Command(BaseCommand):
             email = user_data.get('email', '')
             first_name = user_data.get('first_name', '')
             last_name = user_data.get('last_name', '')
+            
+            # If only name/surname provided, don't create User - will create FencerProfile only
+            if not username and not email:
+                identifier = f"{first_name} {last_name}".strip()
+                if identifier:
+                    user_mapping[identifier] = None  # No user, just profile
+                continue
             
             # Try to find existing user
             user = None
@@ -222,25 +233,18 @@ class Command(BaseCommand):
             # Create user if not found and create_users is True
             if not user:
                 if create_users:
-                    if not username:
-                        # Generate username from name
-                        username = f"{first_name.lower()}.{last_name.lower()}".replace(' ', '')
-                        # Ensure uniqueness
-                        base_username = username
-                        counter = 1
-                        while User.objects.filter(username=username).exists():
-                            username = f"{base_username}{counter}"
-                            counter += 1
-                    
                     if not email:
-                        email = f"{username}@example.com"
+                        # Generate email from username if not provided
+                        if username:
+                            email = f"{username}@example.com"
+                        else:
+                            email = f"{first_name.lower()}.{last_name.lower()}@example.com".replace(' ', '')
                     
                     if not dry_run:
+                        # User model only has username, email, and admin status
                         user = User.objects.create_user(
                             username=username,
-                            email=email,
-                            first_name=first_name,
-                            last_name=last_name
+                            email=email
                         )
                         self.stdout.write(self.style.SUCCESS(f'  Created user: {username}'))
                     else:
@@ -253,8 +257,12 @@ class Command(BaseCommand):
                     continue
             
             # Store mapping
-            identifier = username or email or f"{first_name} {last_name}".strip()
+            identifier = username or email
             user_mapping[identifier] = user
+            # Also store by name if provided (for matching in participations)
+            if first_name and last_name:
+                name_identifier = f"{first_name} {last_name}".strip()
+                user_mapping[name_identifier] = user
         
         return user_mapping
 
@@ -272,10 +280,12 @@ class Command(BaseCommand):
             gender = user_data.get('gender', '')
             birth_year = user_data.get('birth_year')
             
+            # Determine identifier and user
             identifier = username or email or f"{first_name} {last_name}".strip()
             user = user_mapping.get(identifier)
             
-            if not user:
+            # If identifier is name and user is None, that's OK - we'll create profile without user
+            if not identifier:
                 continue
             
             # Get or create club
@@ -289,17 +299,17 @@ class Command(BaseCommand):
                     self.stdout.write(f'  [DRY RUN] Would get/create club: {club_name}')
                     club = type('Club', (), {'id': None, 'name': club_name})()  # Mock club
             
+            # Parse birth_year
+            birth_year_value = None
+            if birth_year:
+                try:
+                    birth_year_value = int(birth_year)
+                except (ValueError, TypeError):
+                    pass
+            
             # Get or create fencer profile
             if not dry_run:
-                if hasattr(user, 'id') and user.id:  # Real user object
-                    # Parse birth_year
-                    birth_year_value = None
-                    if birth_year:
-                        try:
-                            birth_year_value = int(birth_year)
-                        except (ValueError, TypeError):
-                            pass
-                    
+                if user and hasattr(user, 'id') and user.id:  # Real user object
                     fencer_profile, created = FencerProfile.objects.get_or_create(
                         user=user,
                         defaults={
@@ -308,7 +318,6 @@ class Command(BaseCommand):
                             'gender': gender or '',
                             'first_name': first_name or '',
                             'last_name': last_name or '',
-                            'email': email or '',
                             'birth_year': birth_year_value,
                         }
                     )
@@ -322,38 +331,54 @@ class Command(BaseCommand):
                             fencer_profile.phone = phone
                         if gender:
                             fencer_profile.gender = gender
+                        if first_name:
+                            fencer_profile.first_name = first_name
+                        if last_name:
+                            fencer_profile.last_name = last_name
                         if birth_year_value is not None:
                             fencer_profile.birth_year = birth_year_value
                         fencer_profile.save()
                         self.stdout.write(f'  Updated fencer profile for: {identifier}')
                 else:
-                    # Parse birth_year
-                    birth_year_value = None
-                    if birth_year:
-                        try:
-                            birth_year_value = int(birth_year)
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    # Create profile without user
+                    # Create profile without user (when only name/surname provided)
                     fencer_profile, created = FencerProfile.objects.get_or_create(
                         first_name=first_name,
                         last_name=last_name,
+                        user__isnull=True,
                         defaults={
                             'club': club,
                             'phone': phone or '',
                             'gender': gender or '',
-                            'email': email or '',
                             'birth_year': birth_year_value,
                         }
                     )
                     if created:
                         self.stdout.write(self.style.SUCCESS(f'  Created fencer profile (no user) for: {identifier}'))
+                    else:
+                        # Update existing profile
+                        if club:
+                            fencer_profile.club = club
+                        if phone:
+                            fencer_profile.phone = phone
+                        if gender:
+                            fencer_profile.gender = gender
+                        if birth_year_value is not None:
+                            fencer_profile.birth_year = birth_year_value
+                        fencer_profile.save()
+                        self.stdout.write(f'  Updated fencer profile (no user) for: {identifier}')
             else:
                 self.stdout.write(f'  [DRY RUN] Would get/create fencer profile for: {identifier}')
                 fencer_profile = type('FencerProfile', (), {'id': None})()  # Mock profile
             
+            # Store in mapping by multiple identifiers for easier lookup
             fencer_mapping[identifier] = fencer_profile
+            if username:
+                fencer_mapping[username] = fencer_profile
+            if email:
+                fencer_mapping[email] = fencer_profile
+            if first_name and last_name:
+                name_key = f"{first_name} {last_name}".strip()
+                fencer_mapping[name_key] = fencer_profile
         
         return fencer_mapping
 
@@ -462,8 +487,51 @@ class Command(BaseCommand):
             touches_received = participation_data.get('touches_received', 0) or 0
             points = participation_data.get('points')
             
-            # Find fencer
+            # Find fencer - try multiple ways
             fencer = fencer_mapping.get(fencer_identifier)
+            
+            # If not found in mapping, try to find by name in database
+            if not fencer and not dry_run:
+                # Try to parse as "first_name last_name"
+                name_parts = str(fencer_identifier).strip().split(None, 1)
+                if len(name_parts) == 2:
+                    first_name, last_name = name_parts[0], name_parts[1]
+                    try:
+                        fencer = FencerProfile.objects.get(
+                            first_name__iexact=first_name,
+                            last_name__iexact=last_name
+                        )
+                        self.stdout.write(f'  Found fencer by name: {fencer_identifier}')
+                    except FencerProfile.DoesNotExist:
+                        pass
+                    except FencerProfile.MultipleObjectsReturned:
+                        # If multiple found, take the first one
+                        fencer = FencerProfile.objects.filter(
+                            first_name__iexact=first_name,
+                            last_name__iexact=last_name
+                        ).first()
+                        self.stdout.write(f'  Multiple fencers found for {fencer_identifier}, using first match')
+            
+            # If still not found, try by username or email
+            if not fencer and not dry_run:
+                try:
+                    user = User.objects.get(username=fencer_identifier)
+                    try:
+                        fencer = user.fencer_profile
+                        self.stdout.write(f'  Found fencer by username: {fencer_identifier}')
+                    except FencerProfile.DoesNotExist:
+                        pass
+                except User.DoesNotExist:
+                    try:
+                        user = User.objects.get(email=fencer_identifier)
+                        try:
+                            fencer = user.fencer_profile
+                            self.stdout.write(f'  Found fencer by email: {fencer_identifier}')
+                        except FencerProfile.DoesNotExist:
+                            pass
+                    except User.DoesNotExist:
+                        pass
+            
             if not fencer:
                 self.stdout.write(self.style.WARNING(
                     f'  Fencer not found: {fencer_identifier}'

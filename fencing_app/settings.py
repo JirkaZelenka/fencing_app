@@ -97,6 +97,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Custom User model
+AUTH_USER_MODEL = 'fencers.User'
+
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True

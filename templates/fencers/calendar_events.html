@@ -95,6 +95,12 @@
                                                 <div class="event-hover-item">
                                                     <div class="event-title-small">{{ event.title }}</div>
                                                     <div class="d-flex gap-1 mt-1">
+                                                        {% if event.description %}
+                                                            <button type="button" class="btn btn-xs btn-success" data-bs-toggle="modal" data-bs-target="#infoModal" data-event-title="{{ event.title }}" data-event-description="{{ event.description|escapejs }}">Info</button>
+                                                        {% endif %}
+                                                        {% if event.has_album %}
+                                                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-xs {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
+                                                        {% endif %}
                                                         {% if event.event_type == 'other' %}
                                                             <span class="btn btn-xs btn-secondary" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
                                                         {% elif event.user_participated %}
@@ -102,8 +108,8 @@
                                                         {% else %}
                                                             <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-xs btn-outline-primary">Výsledky</a>
                                                         {% endif %}
-                                                        {% if event.has_album %}
-                                                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-xs {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
+                                                        {% if event.external_link %}
+                                                            <a href="{{ event.external_link }}" target="_blank" class="btn btn-xs btn-success">Výsledky PDF</a>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -155,14 +161,16 @@
                 <p class="card-text">
                     <strong>Datum:</strong> {{ event.start|date:"d.m.Y" }}<br>
                     {% if event.location %}<strong>Místo:</strong> {{ event.location }}<br>{% endif %}
-                    {% if event.description %}{{ event.description }}<br>{% endif %}
-                    {% if event.external_link %}
-                        <a href="{{ event.external_link }}" target="_blank" class="btn btn-sm btn-outline-primary">Odkaz na czechfencing</a>
-                    {% endif %}
                 </p>
                 
                 <!-- Event Action Buttons -->
                 <div class="event-actions mt-3">
+                    {% if event.description %}
+                        <button type="button" class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#infoModal" data-event-title="{{ event.title }}" data-event-description="{{ event.description|escapejs }}">Info</button>
+                    {% endif %}
+                    {% if event.has_album %}
+                        <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %} me-2">Fotky</a>
+                    {% endif %}
                     {% if event.event_type == 'other' %}
                         <span class="btn btn-sm btn-secondary me-2" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
                     {% elif event.user_participated %}
@@ -170,8 +178,8 @@
                     {% else %}
                         <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
                     {% endif %}
-                    {% if event.has_album %}
-                        <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
+                    {% if event.external_link %}
+                        <a href="{{ event.external_link }}" target="_blank" class="btn btn-sm btn-success">Výsledky PDF</a>
                     {% endif %}
                 </div>
                 
@@ -217,6 +225,12 @@
                     
                     <!-- Event Action Buttons -->
                     <div class="event-actions mt-3">
+                        {% if event.description %}
+                            <button type="button" class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#infoModal" data-event-title="{{ event.title }}" data-event-description="{{ event.description|escapejs }}">Info</button>
+                        {% endif %}
+                        {% if event.has_album %}
+                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %} me-2">Fotky</a>
+                        {% endif %}
                         {% if event.event_type == 'other' %}
                             <span class="btn btn-sm btn-secondary me-2" style="pointer-events: none; opacity: 0.6;">Výsledky</span>
                         {% elif event.user_participated %}
@@ -224,8 +238,8 @@
                         {% else %}
                             <a href="{% url 'statistics_individual' %}{% if event.event_type == 'tournament' %}?tournament={{ event.title|urlencode }}{% endif %}" class="btn btn-sm btn-outline-primary me-2">Výsledky</a>
                         {% endif %}
-                        {% if event.has_album %}
-                            <a href="{% url 'album_detail' event.album_id %}" class="btn btn-sm {% if event.has_photos %}btn-success{% else %}btn-outline-primary{% endif %}">Fotky</a>
+                        {% if event.external_link %}
+                            <a href="{{ event.external_link }}" target="_blank" class="btn btn-sm btn-success">Výsledky PDF</a>
                         {% endif %}
                     </div>
                 </div>
@@ -236,6 +250,24 @@
                 Zatím žádné minulé akce
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="infoModalBody">
+                <!-- Content will be inserted here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zavřít</button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -308,7 +340,57 @@
                 }
             });
         });
+        
+        // Handle Info modal
+        var infoModal = document.getElementById('infoModal');
+        if (infoModal) {
+            infoModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var eventTitle = button.getAttribute('data-event-title');
+                var eventDescription = button.getAttribute('data-event-description');
+                
+                var modalTitle = infoModal.querySelector('#infoModalLabel');
+                var modalBody = infoModal.querySelector('#infoModalBody');
+                
+                modalTitle.textContent = eventTitle || 'Info';
+                
+                // Process description to make links clickable
+                var processedDescription = processDescriptionForLinks(eventDescription || '');
+                modalBody.innerHTML = processedDescription;
+            });
+        }
     });
+    
+    // Function to process description and make links clickable
+    function processDescriptionForLinks(text) {
+        if (!text) return '';
+        
+        // Escape HTML first to prevent XSS
+        var escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        
+        // URL regex pattern - matches http://, https://, www., or common domain patterns
+        var urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/g;
+        
+        // Replace URLs with clickable links
+        var processed = escaped.replace(urlPattern, function(url) {
+            var href = url;
+            // Add http:// if it starts with www. or doesn't have a protocol
+            if (url.startsWith('www.') || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+                href = 'http://' + url;
+            }
+            return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+        });
+        
+        // Convert line breaks to <br>
+        processed = processed.replace(/\n/g, '<br>');
+        
+        return processed;
+    }
 </script>
 {% endblock %}
 

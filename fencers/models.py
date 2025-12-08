@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.conf import settings
 from django.urls import reverse
 
 
@@ -71,7 +72,7 @@ class FencerProfile(models.Model):
         MALE = 'M', "M"
         FEMALE = 'Z', "Ž"
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fencer_profile', null=True, blank=True, verbose_name="Uživatel")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='fencer_profile', null=True, blank=True, verbose_name="Uživatel")
     club = models.ForeignKey(Club, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Klub")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Telefon")
     gender = models.CharField(
@@ -366,6 +367,10 @@ class EquipmentItem(models.Model):
     approximate_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Orientační cena")
     purchase_link = models.URLField(blank=True, verbose_name="Odkaz na nákup")
     image = models.ImageField(upload_to='equipment/', null=True, blank=True, verbose_name="Obrázek")
+    shop_5mfencing_link = models.URLField(blank=True, verbose_name="Odkaz 5MFencing")
+    shop_5mfencing_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Cena 5MFencing")
+    shop_rubyfencing_link = models.URLField(blank=True, verbose_name="Odkaz Rubyfencing")
+    shop_rubyfencing_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Cena Rubyfencing")
     
     class Meta:
         verbose_name = "Vybavení"

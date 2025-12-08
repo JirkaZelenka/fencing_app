@@ -32,24 +32,21 @@ Funkce (jednotlivé stránky):
     - Skladba kord - 3D model hrotu + návod na výlep + seznam nářadí
 - Vybavení = figura šermíře se veškerým vybavením + orientační cena a prokliky na nákup + možnost si odškrtávat nakoupené vybavení
 
+POZN:
+- při importu z excelu se existující šermíři/události/výsledky updatují, přepíšou
+
 TODO:
 
-- bodíky za turnaj - pitomý  sloupec se neukazuje na jedné tabulce - Klubs
+- bodíky za turnaj - pitomý sloupec se neukazuje na jedné tabulce - Klubs
 
--> dodělat, nastavit ENV
-- moožnost přidat změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
+- nastavit ENV pro změnu hesla přes mail..jinak nevím jak obnovit account - nebo je to ok protože se vše sbírá na fencera a ne usera?
 
-DONE: fotky, subalab a lajky převést na Fencera, nikoliv nechávat na uživateli - aby to bylo trvalejší
+- zvýraznit a nechat svítit 1-3 místa, což měla teď Kristýna v Brně
 
-
------------------------------------
-dodělat opravdové turnaje 2025 a 2024
+dodělat opravdové turnaje 2025 a 2024 - viz nový zdroj dat !!
 
 - Statistiky - přidat totaly nebo průměry, a filtry
 
 WIKI -  doplnit materiály a URLs, fotka hrotu atd
-později linky na výbavu. Seznam dobrých značek...
-
-přidat kvalitní fotky všeho
 
 Masíčko - začít řešit tu hudbu jak chtěl Tonda

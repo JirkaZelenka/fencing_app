@@ -16,7 +16,7 @@ urlpatterns = [
              template_name='fencers/password_reset.html',
              email_template_name='fencers/password_reset_email.html',
              subject_template_name='fencers/password_reset_subject.txt',
-             success_url='/password-reset/done/'
+             success_url='/password-reset/done/',
          ), 
          name='password_reset'),
     path('password-reset/done/', 

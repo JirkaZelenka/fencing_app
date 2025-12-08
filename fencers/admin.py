@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth import get_user_model
 from django import forms
 from .models import (
     User, Club, FencerProfile, Event, EventParticipation,
@@ -8,6 +9,10 @@ from .models import (
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
     PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
+
+# Ensure User model is loaded before admin tries to reference it
+# This fixes the 'fencers.user' vs 'fencers.User' issue
+_ = get_user_model()
 
 
 class IsPairedFilter(admin.SimpleListFilter):
@@ -276,6 +281,20 @@ class EquipmentItemAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'approximate_price']
     list_filter = ['category']
     search_fields = ['name', 'description']
+    fieldsets = (
+        ('Základní informace', {
+            'fields': ('name', 'category', 'description', 'image')
+        }),
+        ('Ceny', {
+            'fields': ('approximate_price', 'purchase_link')
+        }),
+        ('5MFencing', {
+            'fields': ('shop_5mfencing_link', 'shop_5mfencing_price')
+        }),
+        ('Rubyfencing', {
+            'fields': ('shop_rubyfencing_link', 'shop_rubyfencing_price')
+        }),
+    )
 
 
 @admin.register(UserEquipment)

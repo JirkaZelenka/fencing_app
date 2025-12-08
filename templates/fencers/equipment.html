@@ -112,9 +112,27 @@
                                         {% if item.approximate_price %}
                                             <p class="card-text"><strong>Cena:</strong> {{ item.approximate_price }} Kč</p>
                                         {% endif %}
-                                        {% if item.purchase_link %}
-                                            <a href="{{ item.purchase_link }}" target="_blank" class="btn btn-sm btn-primary">Koupit</a>
-                                        {% endif %}
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            {% if item.shop_5mfencing_link %}
+                                                <a href="{{ item.shop_5mfencing_link }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    5MFencing
+                                                    {% if item.shop_5mfencing_price %}
+                                                        <small class="d-block" style="font-size: 0.7em;">{{ item.shop_5mfencing_price }} Kč</small>
+                                                    {% endif %}
+                                                </a>
+                                            {% endif %}
+                                            {% if item.shop_rubyfencing_link %}
+                                                <a href="{{ item.shop_rubyfencing_link }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                                                    Rubyfencing
+                                                    {% if item.shop_rubyfencing_price %}
+                                                        <small class="d-block" style="font-size: 0.7em;">{{ item.shop_rubyfencing_price }} Kč</small>
+                                                    {% endif %}
+                                                </a>
+                                            {% endif %}
+                                            {% if item.purchase_link %}
+                                                <a href="{{ item.purchase_link }}" target="_blank" class="btn btn-sm btn-primary">Koupit</a>
+                                            {% endif %}
+                                        </div>
                                         <div class="form-check mt-2">
                                             <input class="form-check-input equipment-checkbox" type="checkbox" 
                                                    data-equipment-id="{{ item.id }}"

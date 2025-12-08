@@ -178,7 +178,7 @@ def login_view(request):
                 return redirect('match_profile')
             return redirect('home')
         else:
-            messages.error(request, 'Neplatné přihlašovací údaje.')
+            messages.error(request, 'Uživatelské jméno nebo heslo není správné.')
     
     return render(request, 'fencers/login.html')
 

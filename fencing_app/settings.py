@@ -12,7 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security settings for public deployment
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+# ALLOWED_HOSTS = ['fencing.vikingov.cz', 'localhost', '127.0.0.1', 'ntb-5asm0mcb.pig-halosaur.ts.net', '*']
+ALLOWED_HOSTS=['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -136,3 +138,10 @@ EMAIL_TIMEOUT = 5  # 5 seconds timeout
 # Password reset settings
 PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
 
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://ntb-5asm0mcb.pig-halosaur.ts.net"
+    #, "https://fencing.vikingov.cz",
+]

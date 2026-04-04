@@ -5,12 +5,12 @@ from django.urls import reverse
 
 
 class UserManager(BaseUserManager):
-    """Custom user manager for User model without first_name/last_name"""
+    """Custom user manager for the User model."""
     
     def create_user(self, username, email=None, password=None, **extra_fields):
         if not username:
             raise ValueError('The Username field must be set')
-        email = self.normalize_email(email) if email else None
+        email = self.normalize_email(email) if email else ""
         user = self.model(username=username, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -29,9 +29,15 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """Custom User model with only username, email, and admin fields"""
+    """Custom User model with only username, email, and admin fields.
+
+    first_name/last_name exist only so INSERTs into legacy auth_user columns succeed;
+    real names live on FencerProfile.
+    """
+    first_name = models.CharField(max_length=150, blank=True, default="", verbose_name="Jméno")
+    last_name = models.CharField(max_length=150, blank=True, default="", verbose_name="Příjmení")
     username = models.CharField(max_length=150, unique=True, verbose_name="Uživatelské jméno")
-    email = models.EmailField(blank=True, null=True, verbose_name="Email")
+    email = models.EmailField(blank=True, default="", verbose_name="Email")
     is_staff = models.BooleanField(default=False, verbose_name="Je zaměstnanec")
     is_active = models.BooleanField(default=True, verbose_name="Je aktivní")
     date_joined = models.DateTimeField(auto_now_add=True, verbose_name="Datum registrace")

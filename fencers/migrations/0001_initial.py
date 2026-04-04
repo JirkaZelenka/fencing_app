@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import migrations, models
+import django.contrib.auth.models
 import django.db.models.deletion
 
 
@@ -10,10 +11,35 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('auth', '0012_alter_user_first_name_max_length'),
+        ('contenttypes', '0002_remove_content_type_name'),
     ]
 
     operations = [
+        migrations.CreateModel(
+            name='User',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('password', models.CharField(max_length=128, verbose_name='password')),
+                ('is_superuser', models.BooleanField(default=False, verbose_name='superuser status')),
+                ('username', models.CharField(max_length=150, unique=True, verbose_name='Uživatelské jméno')),
+                ('email', models.EmailField(blank=True, max_length=254, null=True, verbose_name='Email')),
+                ('is_staff', models.BooleanField(default=False, verbose_name='Je zaměstnanec')),
+                ('is_active', models.BooleanField(default=True, verbose_name='Je aktivní')),
+                ('date_joined', models.DateTimeField(auto_now_add=True, verbose_name='Datum registrace')),
+                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='Poslední přihlášení')),
+                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
+                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+            ],
+            options={
+                'verbose_name': 'Uživatel',
+                'verbose_name_plural': 'Uživatelé',
+                'db_table': 'auth_user',
+            },
+            managers=[
+                ('objects', django.contrib.auth.models.UserManager()),
+            ],
+        ),
         migrations.CreateModel(
             name='Club',
             fields=[

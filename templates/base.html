@@ -60,8 +60,8 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'payment_status' %}">
                             Platby
-                            {% if user.is_authenticated and user.fencer_profile %}
-                                {% with payment_status=user.fencer_profile.payment_status %}
+                            {% if user.is_authenticated and request.fencer_profile %}
+                                {% with payment_status=request.fencer_profile.payment_status %}
                                     {% if payment_status %}
                                         {% if payment_status.is_paid %}
                                             <span class="payment-status-dot payment-dot-green"></span>

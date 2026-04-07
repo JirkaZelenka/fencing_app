@@ -1,4 +1,9 @@
 
+DONE: přepsat do skills
+- napojení na exitující účty - s propmptem na potvrzení + Rok narození
+- líp udělat ten seznam, jen jména + stav napojení -> případně zámeček.
+
+##########################################xxx
 TODO:
 
 - bodíky za turnaj - pitomý sloupec se neukazuje na jedné tabulce - Klubs
@@ -23,5 +28,5 @@ Masíčko - možnit drag and drop při tvrobě listu, na řazení. lepší i pro
     - opravy s návody a fotkami
     - proklik na nářadí, stejně jako u výbavy
 
-- napojení na exitující účty - s propmptem na potvrzení + Rok narození
-- líp udělat ten seznam, jen jména + stav napojení 
+
+- šítky pro lidi, co mají funkci - aby bylo v seznamu jasné, koho s čím zkontaktovat

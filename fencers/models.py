@@ -11,6 +11,8 @@ class UserManager(BaseUserManager):
         if not username:
             raise ValueError('The Username field must be set')
         email = self.normalize_email(email) if email else ""
+        extra_fields.setdefault("first_name", "")
+        extra_fields.setdefault("last_name", "")
         user = self.model(username=username, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -52,6 +54,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "Uživatel"
         verbose_name_plural = "Uživatelé"
         db_table = 'auth_user'  # Use same table name for compatibility
+
+    def save(self, *args, **kwargs):
+        # Legacy auth_user columns are often NOT NULL; never write SQL NULL for these.
+        if self.first_name is None:
+            self.first_name = ""
+        if self.last_name is None:
+            self.last_name = ""
+        super().save(*args, **kwargs)
 
     def get_full_name(self):
         """Returns username since we don't have first_name/last_name.

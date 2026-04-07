@@ -82,6 +82,9 @@ class RegistrationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
+        # auth_user.first_name/last_name are NOT NULL in DB; UserCreationForm may leave them unset/NULL.
+        user.first_name = ""
+        user.last_name = ""
         if commit:
             user.save()
         return user

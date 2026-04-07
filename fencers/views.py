@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
@@ -19,6 +19,24 @@ from .models import (
     UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm, RegistrationForm
+
+# Profile self-match: failed birth-year check blocks retries for this many minutes.
+PROFILE_JOIN_BLOCK_SECONDS = 120
+_SESSION_PROFILE_JOIN_BLOCK_UNTIL = "profile_join_blocked_until_ts"
+_SESSION_MATCH_PENDING_PROFILE_ID = "match_pending_profile_id"
+
+
+def _profile_join_block_state(request):
+    """Returns (is_blocked, seconds_remaining). Clears expired block from session."""
+    until_ts = request.session.get(_SESSION_PROFILE_JOIN_BLOCK_UNTIL)
+    if not until_ts:
+        return False, 0
+    now_ts = int(timezone.now().timestamp())
+    if now_ts < until_ts:
+        return True, until_ts - now_ts
+    del request.session[_SESSION_PROFILE_JOIN_BLOCK_UNTIL]
+    request.session.modified = True
+    return False, 0
 
 
 # Slots shown around the figurine in the equipment view.
@@ -190,7 +208,14 @@ def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            UserModel = get_user_model()
+            user = UserModel.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data.get('email', ''),
+                password=form.cleaned_data['password1'],
+                first_name='',
+                last_name='',
+            )
             login(request, user)
             messages.success(request, 'Účet byl úspěšně vytvořen! Nyní se prosím přiřaďte k jednomu z předpřipravených profilů.')
             return redirect('match_profile')
@@ -207,27 +232,125 @@ def match_profile(request):
     if hasattr(request.user, 'fencer_profile') and request.user.fencer_profile:
         messages.info(request, 'Již máte přiřazený profil.')
         return redirect('home')
-    
-    # Get all unmatched profiles (profiles without a user)
-    unmatched_profiles = FencerProfile.objects.filter(user__isnull=True).select_related('club').order_by('last_name', 'first_name')
-    
-    if request.method == 'POST':
-        profile_id = request.POST.get('profile_id')
-        try:
-            profile = FencerProfile.objects.get(id=profile_id, user__isnull=True)
-            # Link the user to this profile
+
+    blocked, block_seconds_remaining = _profile_join_block_state(request)
+
+    if request.method == 'POST' and blocked:
+        return redirect('match_profile')
+
+    # All club profiles for the list (assigned ones shown locked; only unassigned are selectable).
+    profiles_for_matching = FencerProfile.objects.select_related("user", "club").order_by(
+        "last_name", "first_name"
+    )
+
+    if request.method == 'POST' and not blocked:
+        action = request.POST.get('action')
+
+        if action == 'choose_profile':
+            raw_id = request.POST.get('profile_id')
+            try:
+                pid = int(raw_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Neplatný výběr profilu.')
+                return redirect('match_profile')
+            try:
+                profile = FencerProfile.objects.get(id=pid, user__isnull=True)
+            except FencerProfile.DoesNotExist:
+                messages.error(request, 'Vybraný profil neexistuje nebo již byl přiřazen.')
+                return redirect('match_profile')
+            request.session[_SESSION_MATCH_PENDING_PROFILE_ID] = profile.id
+            request.session.modified = True
+            return redirect('match_profile')
+
+        if action == 'cancel_pending':
+            request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+            request.session.modified = True
+            return redirect('match_profile')
+
+        if action == 'confirm_join':
+            pending_id = request.session.get(_SESSION_MATCH_PENDING_PROFILE_ID)
+            posted_id = request.POST.get('profile_id')
+            try:
+                pending_id = int(pending_id)
+                posted_id = int(posted_id)
+            except (TypeError, ValueError):
+                messages.error(request, 'Neplatná žádost o přiřazení.')
+                request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+                request.session.modified = True
+                return redirect('match_profile')
+            if pending_id != posted_id:
+                messages.error(request, 'Neplatná žádost o přiřazení.')
+                request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+                request.session.modified = True
+                return redirect('match_profile')
+            try:
+                profile = FencerProfile.objects.get(id=pending_id, user__isnull=True)
+            except FencerProfile.DoesNotExist:
+                messages.error(request, 'Profil již není k dispozici.')
+                request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+                request.session.modified = True
+                return redirect('match_profile')
+
+            if profile.birth_year is None:
+                messages.error(
+                    request,
+                    'U tohoto profilu není nastaven rok narození pro ověření. Kontaktujte prosím administrátora.',
+                )
+                request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+                request.session.modified = True
+                return redirect('match_profile')
+
+            raw_year = (request.POST.get('birth_year') or '').strip()
+            try:
+                entered_year = int(raw_year)
+            except ValueError:
+                entered_year = None
+            current_year = timezone.now().year
+            if (
+                entered_year is None
+                or entered_year < 1900
+                or entered_year > current_year
+                or entered_year != profile.birth_year
+            ):
+                until_ts = int(timezone.now().timestamp()) + PROFILE_JOIN_BLOCK_SECONDS
+                request.session[_SESSION_PROFILE_JOIN_BLOCK_UNTIL] = until_ts
+                request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+                request.session.modified = True
+                messages.error(
+                    request,
+                    'Nesprávný rok narození. Přiřazení k profilu je na 2 minuty zablokováno. Zkuste to znovu později.',
+                )
+                return redirect('match_profile')
+
             profile.user = request.user
             profile.save()
-            
-            # Get display name from profile or username
-            display_name = f"{profile.first_name} {profile.last_name}".strip() if (profile.first_name or profile.last_name) else request.user.username
+            request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+            request.session.modified = True
+            display_name = (
+                f"{profile.first_name} {profile.last_name}".strip()
+                if (profile.first_name or profile.last_name)
+                else request.user.username
+            )
             messages.success(request, f'Profil byl úspěšně přiřazen! Vítejte, {display_name}.')
             return redirect('home')
+
+    pending_profile = None
+    pending_id = request.session.get(_SESSION_MATCH_PENDING_PROFILE_ID)
+    if pending_id and not blocked:
+        try:
+            pending_profile = FencerProfile.objects.get(id=pending_id, user__isnull=True)
         except FencerProfile.DoesNotExist:
-            messages.error(request, 'Vybraný profil neexistuje nebo již byl přiřazen.')
-    
+            request.session.pop(_SESSION_MATCH_PENDING_PROFILE_ID, None)
+            request.session.modified = True
+
+    assignable_exists = profiles_for_matching.filter(user__isnull=True).exists()
     context = {
-        'unmatched_profiles': unmatched_profiles,
+        "profiles_for_matching": profiles_for_matching,
+        "all_profiles_already_assigned": profiles_for_matching.exists()
+        and not assignable_exists,
+        "pending_profile": pending_profile,
+        "join_blocked": blocked,
+        "join_block_seconds_remaining": block_seconds_remaining,
     }
     return render(request, 'fencers/match_profile.html', context)
 
@@ -612,8 +735,11 @@ def delete_circuit_training(request, circuit_id):
 
 @login_required
 def event_photos(request):
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        return redirect("match_profile")
     # Get all albums
-    all_albums = PhotoAlbum.objects.all().select_related('event').order_by('-event__date')
+    all_albums = PhotoAlbum.objects.all().select_related("event").order_by("-event__date")
     
     # Extract unique years from albums
     years = sorted(set(
@@ -643,7 +769,10 @@ def event_photos(request):
 
 @login_required
 def album_detail(request, album_id):
-    album = get_object_or_404(PhotoAlbum.objects.select_related('event'), id=album_id)
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        return redirect("match_profile")
+    album = get_object_or_404(PhotoAlbum.objects.select_related("event"), id=album_id)
     subalbums = album.subalbums.all().prefetch_related('photos').order_by('-created_at')
     
     # Get all photos from all subalbums for browsing
@@ -655,12 +784,9 @@ def album_detail(request, album_id):
     ).prefetch_related('likes', 'likes__fencer', 'likes__fencer__user').order_by('-uploaded_at')
     
     # Get user's liked photos for this album
-    profile = getattr(request.user, 'fencer_profile', None)
-    user_liked_photo_ids = set()
-    if profile:
-        user_liked_photo_ids = set(
-            PhotoLike.objects.filter(fencer=profile, photo__in=all_photos).values_list('photo_id', flat=True)
-        )
+    user_liked_photo_ids = set(
+        PhotoLike.objects.filter(fencer=profile, photo__in=all_photos).values_list("photo_id", flat=True)
+    )
     
     context = {
         'album': album,
@@ -733,6 +859,9 @@ def upload_photo(request, subalbum_id):
 @login_required
 @require_POST
 def update_album_cover(request, album_id):
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        return redirect("match_profile")
     album = get_object_or_404(PhotoAlbum, id=album_id)
     
     if 'cover_photo' not in request.FILES:
@@ -1318,8 +1447,10 @@ def my_favorite_photos(request):
 @login_required
 def most_liked_photos(request):
     """View for 'Nejoblíbenější fotky' - most liked photos (at least 1 like)"""
-    profile = getattr(request.user, 'fencer_profile', None)
-    
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        return redirect("match_profile")
+
     # Get all photos with at least 1 like, ordered by like count
     liked_photos = EventPhoto.objects.annotate(
         like_count=Count('likes')
@@ -1332,12 +1463,10 @@ def most_liked_photos(request):
         'uploaded_by'
     ).prefetch_related('likes', 'likes__fencer', 'likes__fencer__user').order_by('-like_count', '-uploaded_at')
     
-    user_liked_photo_ids = set()
-    if profile:
-        user_liked_photo_ids = set(
-            PhotoLike.objects.filter(fencer=profile, photo__in=liked_photos).values_list('photo_id', flat=True)
-        )
-    
+    user_liked_photo_ids = set(
+        PhotoLike.objects.filter(fencer=profile, photo__in=liked_photos).values_list("photo_id", flat=True)
+    )
+
     context = {
         'all_photos': liked_photos,
         'user_liked_photo_ids': user_liked_photo_ids,

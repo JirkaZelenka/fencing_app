@@ -10,6 +10,8 @@ TRANSLATIONS_EN = {
     "Masicko": "Circuits",
     "Fotky z akci": "Event photos",
     "Kalendar akci": "Event calendar",
+    "Wiki": "Wiki",
+    "Vybava": "Gear",
     "Platby": "Payments",
     "Odhlasit": "Log out",
     "Prepnout svetly/tmavy rezim": "Toggle light/dark mode",

@@ -291,6 +291,14 @@ body[data-theme="dark"] .table thead th {
     font-size: 2rem;
 }
 
+.loadout-icon-svg {
+    display: block;
+    width: 1.85rem;
+    height: 1.85rem;
+    flex-shrink: 0;
+    color: inherit;
+}
+
 .loadout-label {
     font-weight: 600;
     text-align: center;
@@ -326,6 +334,88 @@ body[data-theme="dark"] .table thead th {
 
 .guide-tile:hover .guide-icon {
     color: #0a58ca;
+}
+
+.guide-tiles-grid-2x2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.guide-tiles-grid-2x2 .guide-tile {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.guide-tiles-grid-2x2--sidebar .guide-tile {
+    min-height: 110px;
+}
+
+.loadout-pair-wrapper {
+    width: auto;
+    align-self: center;
+}
+
+/* Overlapping pair (Kord 1/2, Šňůra 1/2): front tile full, rear offset so ~half peeks right */
+.loadout-weapon-pair {
+    --pair-tile-size: 118px;
+    --pair-overlap: calc(var(--pair-tile-size) * 0.5);
+    position: relative;
+    width: calc(var(--pair-tile-size) + var(--pair-overlap));
+    height: var(--pair-tile-size);
+    flex-shrink: 0;
+}
+
+.loadout-tile.loadout-tile--pair {
+    position: absolute;
+    top: 0;
+    width: var(--pair-tile-size, 118px);
+    height: var(--pair-tile-size, 118px);
+    max-width: var(--pair-tile-size, 118px);
+    margin: 0;
+    padding: 0.65rem;
+}
+
+.loadout-tile--pair.pair-order-1 {
+    left: 0;
+    z-index: 2;
+    box-shadow: 3px 0 14px rgba(0, 0, 0, 0.1);
+    /* Opaque panel so label/status stay readable (not washed by the tile behind) */
+    background-color: var(--card-bg);
+    background-image: none;
+}
+
+.loadout-tile.loadout-tile--pair.pair-order-1.obtained {
+    background: #d1e7dd;
+    border-color: #198754;
+    box-shadow: 3px 0 14px rgba(25, 135, 84, 0.28);
+}
+
+.loadout-tile--pair.pair-order-2 {
+    left: var(--pair-overlap);
+    z-index: 1;
+}
+
+.loadout-tile--pair.pair-order-1:not(.disabled):hover {
+    transform: translate(-1px, -1px);
+}
+
+.loadout-tile--pair.pair-order-2:not(.disabled):hover {
+    transform: translate(1px, -1px);
+}
+
+[data-theme="dark"] .loadout-tile--pair.pair-order-1 {
+    box-shadow: 3px 0 16px rgba(0, 0, 0, 0.35);
+    background-color: var(--card-bg);
+    background-image: none;
+}
+
+[data-theme="dark"] .loadout-tile.loadout-tile--pair.pair-order-1.obtained {
+    background: #1a3d2e;
+    border-color: #2ea043;
+    box-shadow: 3px 0 16px rgba(46, 160, 67, 0.35);
 }
 
 .payment-status-dot {

@@ -1,0 +1,24 @@
+{% if slot.pair_horizontal %}
+<div class="loadout-tile-wrapper loadout-pair-wrapper connector connector-{{ slot.position|default:'left' }}">
+    <div class="loadout-weapon-pair" role="group" aria-label="{{ slot.pair_aria_label|default:'Dvojice' }}">
+        {% for layer in slot.layers %}
+        <button
+            type="button"
+            class="loadout-tile loadout-tile--pair pair-order-{{ forloop.counter }}{% if layer.is_owned %} obtained{% endif %}{% if layer.is_disabled %} disabled{% endif %}"
+            data-equipment-id="{{ layer.equipment_id|default_if_none:'' }}"
+            data-owned="{{ layer.is_owned|yesno:'true,false' }}"
+            title="{{ layer.description|default:'' }}"
+            {% if layer.is_disabled %}disabled{% endif %}
+            aria-pressed="{{ layer.is_owned|yesno:'true,false' }}">
+            <span class="loadout-icon">
+                <i class="ti ti-{{ layer.icon }}"></i>
+            </span>
+            <span class="loadout-label">{{ layer.label }}</span>
+            <span class="loadout-status">{% if layer.is_owned %}Získáno{% else %}Chybí{% endif %}</span>
+        </button>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+{% include 'fencers/partials/loadout_tile.html' with slot=slot %}
+{% endif %}

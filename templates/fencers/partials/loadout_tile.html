@@ -8,8 +8,7 @@
         {% if slot.is_disabled %}disabled{% endif %}
         aria-pressed="{{ slot.is_owned|yesno:'true,false' }}">
         <span class="loadout-icon">
-            <!-- <i class="bi {{ slot.icon_class }}"></i> -->   
-            <i class="ti ti-{{ slot.icon }}"></i>
+            {% include 'fencers/partials/loadout_icon.html' with icon=slot.icon icon_svg=slot.icon_svg|default:'' %}
         </span>
         <span class="loadout-label">{{ slot.label }}</span>
         <span class="loadout-status">{% if slot.is_owned %}Získáno{% else %}Chybí{% endif %}</span>

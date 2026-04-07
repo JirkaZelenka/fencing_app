@@ -90,36 +90,61 @@ EQUIPMENT_LOADOUT_SLOTS = [
         "fallback_description": "Rukavice s prodlouženou manžetou pro kord.",
     },
     {
-        "id": "socks_shoes",
-        "label": "Ponožky & boty",
+        "id": "shoes",
+        "label": "Boty",
         "icon": "shoe",
-        "keywords": ["boty", "obuv", "socks", "ponožky", "shoes"],
+        "keywords": ["boty", "obuv", "shoes"],
         "position": "bottom",
-        "fallback_description": "Vysoké podkolenky a šermířské boty s boční výztuží pro výpady.",
+        "fallback_description": "Šermířské boty s boční výztuží pro výpady.",
     },
     {
-        "id": "tools",
-        "label": "Nářadí",
-        "icon": "tool",
-        "keywords": ["nářadí", "tools", "tool"],
+        "id": "socks",
+        "label": "Ponožky",
+        "icon": "socks",
+        "keywords": ["ponožky", "socks", "podkolenky"],
         "position": "bottom",
-        "fallback_description": "Nářadí pro údržbu a opravy zbraně.",
+        "fallback_description": "Vysoké podkolenky pro šerm.",
+        "icon_svg": "sock",
     },
     {
-        "id": "weapon",
-        "label": "Kord",
-        "icon": "sword",
-        "keywords": ["kord", "epee", "zbraň", "weapon"],
+        "id": "weapon_pair",
         "position": "right",
-        "fallback_description": "Vyvážený závodní kord s elektrickým hrotem.",
+        "pair_horizontal": True,
+        "pair_aria_label": "Kordy",
+        "layers": [
+            {
+                "label": "Kord 1",
+                "icon": "sword",
+                "match_names": ["Kord 1"],
+                "fallback_description": "Vyvážený závodní kord s elektrickým hrotem.",
+            },
+            {
+                "label": "Kord 2",
+                "icon": "sword",
+                "match_names": ["Kord 2"],
+                "fallback_description": "Záložní nebo druhý kord.",
+            },
+        ],
     },
     {
-        "id": "body_cord",
-        "label": "Šňůra",
-        "icon": "plug-connected",
-        "keywords": ["cord", "kabel", "šňůra"],
+        "id": "cord_pair",
         "position": "right",
-        "fallback_description": "Třívodičový kabel spojující zbraň s aparátem.",
+        "pair_horizontal": True,
+        "pair_aria_label": "Šňůry",
+        "layers": [
+            {
+                "label": "Šňůra 1",
+                "icon": "plug-connected",
+                "match_names": ["Šňůra 1"],
+                "fallback_description": "Třívodičový kabel spojující zbraň s aparátem.",
+            },
+            {
+                "label": "Šňůra 2",
+                "icon": "plug-connected",
+                "match_names": ["Šňůra 2"],
+                "fallback_description": "Záložní nebo druhá šňůra.",
+            },
+        ],
     },
     {
         "id": "chest_guard",
@@ -130,6 +155,29 @@ EQUIPMENT_LOADOUT_SLOTS = [
         "fallback_description": "Plastový chránič hrudi, povinný pro ženy, volitelný pro muže.",
     },
 ]
+
+
+def _find_equipment_for_slot_spec(spec, equipment_items):
+    """Resolve an EquipmentItem for a loadout slot or stacked layer definition."""
+    match_names = spec.get('match_names')
+    if match_names:
+        wanted = frozenset(match_names)
+        for item in equipment_items:
+            if item.name in wanted:
+                return item
+        return None
+    keywords = [kw.casefold() for kw in spec.get('keywords', [])]
+    for item in equipment_items:
+        name_cf = item.name.casefold()
+        if name_cf in keywords:
+            return item
+        for keyword in keywords:
+            if name_cf.startswith(keyword):
+                return item
+            pattern = r'\b' + re.escape(keyword) + r'\b'
+            if re.search(pattern, name_cf):
+                return item
+    return None
 
 
 EVENT_TYPE_ORDER = [
@@ -1327,6 +1375,31 @@ def guides_equipment_assembly(request):
 
 
 @login_required
+def wiki(request):
+    return render(request, 'fencers/wiki.html', {})
+
+
+@login_required
+def guides_tools(request):
+    return render(request, 'fencers/guides_tools.html', {})
+
+
+@login_required
+def guides_weapon_diagnosis(request):
+    return render(request, 'fencers/guides_weapon_diagnosis.html', {})
+
+
+@login_required
+def guides_blade_assembly(request):
+    return render(request, 'fencers/guides_blade_assembly.html', {})
+
+
+@login_required
+def guides_equipment_maintenance(request):
+    return render(request, 'fencers/guides_equipment_maintenance.html', {})
+
+
+@login_required
 def equipment(request):
     user = request.user
     profile = getattr(user, 'fencer_profile', None)
@@ -1334,11 +1407,18 @@ def equipment(request):
         messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
         return redirect('match_profile')
     
-    equipment_items = list(EquipmentItem.objects.all().order_by('category', 'name'))
-    
-    # Get user's equipment status and attach to items
+    raw_equipment = list(EquipmentItem.objects.all().order_by('category', 'name'))
+
+    def _catalog_visible(item):
+        n = item.name.casefold().strip()
+        c = item.category.casefold().strip()
+        return n != 'nářadí' and c != 'nářadí'
+
+    equipment_items = [item for item in raw_equipment if _catalog_visible(item)]
+
+    # Get user's equipment status and attach to items (catalog + loadout matching)
     user_equipment = {ue.equipment_id: ue for ue in UserEquipment.objects.filter(fencer=profile)}
-    for item in equipment_items:
+    for item in raw_equipment:
         item.user_equipment = user_equipment.get(item.id)
     
     if request.method == 'POST':
@@ -1356,40 +1436,42 @@ def equipment(request):
         return JsonResponse({'success': True})
     
     # Build RPG-like loadout slots around the figurine.
-    def find_matching_item(slot):
-        keywords = [kw.casefold() for kw in slot.get('keywords', [])]
-        for item in equipment_items:
-            name_cf = item.name.casefold()
-            # Try exact match first
-            if name_cf in keywords:
-                return item
-            # Then try matching - allow keyword at start of name or as whole word
-            # This handles "mask" -> "Maska" but prevents "vesta" -> "Podvesta"
-            for keyword in keywords:
-                # Match if keyword is at the start of the name (e.g., "mask" matches "Maska")
-                if name_cf.startswith(keyword):
-                    return item
-                # Or match if keyword is a whole word (word boundaries)
-                # This ensures "vesta" matches "Vesta" but not "Podvesta"
-                pattern = r'\b' + re.escape(keyword) + r'\b'
-                if re.search(pattern, name_cf):
-                    return item
-        return None
-    
-    loadout_slots = []
-    for slot in EQUIPMENT_LOADOUT_SLOTS:
-        slot_data = slot.copy()
-        matched_item = find_matching_item(slot)
+    def finalize_slot_dict(base_slot, matched_item):
+        slot_data = base_slot.copy()
         slot_data['equipment_id'] = matched_item.id if matched_item else None
-        slot_data['is_owned'] = (
-            bool(matched_item and matched_item.user_equipment and matched_item.user_equipment.is_owned)
+        slot_data['is_owned'] = bool(
+            matched_item and matched_item.user_equipment and matched_item.user_equipment.is_owned
         )
         slot_data['description'] = (
-            matched_item.description if matched_item and matched_item.description else slot.get('fallback_description', '')
+            matched_item.description
+            if matched_item and matched_item.description
+            else base_slot.get('fallback_description', '')
         )
         slot_data['purchase_link'] = matched_item.purchase_link if matched_item else ''
         slot_data['is_disabled'] = matched_item is None
-        loadout_slots.append(slot_data)
+        return slot_data
+
+    loadout_slots = []
+    for slot in EQUIPMENT_LOADOUT_SLOTS:
+        if slot.get('pair_horizontal'):
+            layers_out = []
+            for layer in slot['layers']:
+                matched_item = _find_equipment_for_slot_spec(layer, raw_equipment)
+                layer_base = {k: v for k, v in layer.items() if k != 'match_names'}
+                layers_out.append(finalize_slot_dict(layer_base, matched_item))
+            loadout_slots.append(
+                {
+                    'pair_horizontal': True,
+                    'position': slot['position'],
+                    'id': slot['id'],
+                    'layers': layers_out,
+                    'pair_aria_label': slot.get('pair_aria_label', 'Dvojice'),
+                }
+            )
+        else:
+            matched_item = _find_equipment_for_slot_spec(slot, raw_equipment)
+            slot_data = finalize_slot_dict(slot, matched_item)
+            loadout_slots.append(slot_data)
     
     positions = {'top': [], 'left': [], 'right': [], 'bottom': []}
     for slot in loadout_slots:

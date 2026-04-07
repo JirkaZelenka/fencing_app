@@ -75,6 +75,11 @@ urlpatterns = [
     path('guides/videos/', views.guides_videos, name='guides_videos'),
     path('guides/rules/', views.guides_rules, name='guides_rules'),
     path('guides/equipment-assembly/', views.guides_equipment_assembly, name='guides_equipment_assembly'),
+    path('guides/tools/', views.guides_tools, name='guides_tools'),
+    path('guides/weapon-diagnosis/', views.guides_weapon_diagnosis, name='guides_weapon_diagnosis'),
+    path('guides/blade-assembly/', views.guides_blade_assembly, name='guides_blade_assembly'),
+    path('guides/equipment-maintenance/', views.guides_equipment_maintenance, name='guides_equipment_maintenance'),
+    path('wiki/', views.wiki, name='wiki'),
     path('equipment/', views.equipment, name='equipment'),
     
     # News endpoints

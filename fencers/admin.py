@@ -7,7 +7,7 @@ from .models import (
     TrainingNote, CircuitTraining, CircuitSong, EventPhoto,
     EventReaction, PaymentStatus, GlossaryTerm,
     GuideVideo, RulesDocument, EquipmentItem, UserEquipment,
-    PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
+    PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead, Badge
 )
 
 # Ensure User model is loaded before admin tries to reference it
@@ -109,10 +109,11 @@ admin.site.register(User, UserAdmin)
 @admin.register(FencerProfile)
 class FencerProfileAdmin(admin.ModelAdmin):
     list_display = ['first_name', 'last_name', 'user', 'club', 'gender', 'birth_year', 'phone', 'get_user_email', 'is_paired']
-    list_filter = ['club', 'gender', IsPairedFilter]
+    list_filter = ['club', 'gender', 'badges', IsPairedFilter]
     search_fields = ['user__username', 'user__email', 'first_name', 'last_name', 'phone']
     autocomplete_fields = ['user']
-    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name')
+    filter_horizontal = ('badges',)
+    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name', 'badges')
     actions = ['unpair_selected_profiles']
     
     def unpair_selected_profiles(self, request, queryset):
@@ -146,6 +147,13 @@ class ClubAdmin(admin.ModelAdmin):
     def get_member_count(self, obj):
         return obj.fencerprofile_set.count()
     get_member_count.short_description = 'Počet členů'
+
+
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'icon_class', 'color', 'tooltip']
+    search_fields = ['name', 'tooltip', 'icon_class']
+    fields = ('name', 'icon_class', 'color', 'tooltip')
 
 
 @admin.register(EventParticipation)

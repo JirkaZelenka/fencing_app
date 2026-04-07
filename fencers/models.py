@@ -83,6 +83,33 @@ class Club(models.Model):
         verbose_name_plural = "Kluby"
 
 
+class Badge(models.Model):
+    """Role badge shown next to a member name."""
+
+    name = models.CharField(max_length=100, unique=True, verbose_name="Název")
+    icon_class = models.CharField(
+        max_length=100,
+        default="ti ti-award",
+        verbose_name="Ikona (Tabler class)",
+        help_text='Např. "ti ti-whirl", "ti ti-coin".',
+    )
+    color = models.CharField(
+        max_length=20,
+        default="#6c757d",
+        verbose_name="Barva pozadí",
+        help_text="Hex barva, např. #0d6efd",
+    )
+    tooltip = models.CharField(max_length=200, blank=True, verbose_name="Text po najetí")
+
+    class Meta:
+        verbose_name = "Badge"
+        verbose_name_plural = "Badges"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class FencerProfile(models.Model):
     class Gender(models.TextChoices):
         MALE = 'M', "M"
@@ -102,10 +129,26 @@ class FencerProfile(models.Model):
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
     birth_year = models.IntegerField(null=True, blank=True, verbose_name="Rok narození")
+    badges = models.ManyToManyField(Badge, blank=True, related_name="fencers", verbose_name="Badges")
     
     def get_full_name(self):
         """Returns full name as 'Jméno Příjmení'"""
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def display_name(self):
+        return self.get_full_name() or f"Profil #{self.id}"
+
+    @property
+    def ordered_badges(self):
+        """Return badges sorted so level badges are always first."""
+        level_badges = {"Nováček", "Senior", "Veterán"}
+
+        def sort_key(badge):
+            # Level badges first, then the rest alphabetically.
+            return (0 if badge.name in level_badges else 1, badge.name.casefold())
+
+        return sorted(self.badges.all(), key=sort_key)
     
     @property
     def is_paired(self):

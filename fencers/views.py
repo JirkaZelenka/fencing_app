@@ -440,11 +440,21 @@ def about_me(request):
     combined_items.sort(key=lambda x: x['date'], reverse=True)
     
     club_fencers_m = club_fencers_z = club_fencers_undefined = FencerProfile.objects.none()
+    club_active_m = club_active_z = club_active_undefined = FencerProfile.objects.none()
+    club_inactive_m = club_inactive_z = club_inactive_undefined = FencerProfile.objects.none()
     if profile.club:
-        club_members = FencerProfile.objects.filter(club=profile.club).select_related('user')
+        club_members = FencerProfile.objects.filter(club=profile.club).select_related('user').prefetch_related('badges')
         club_fencers_m = club_members.filter(gender=FencerProfile.Gender.MALE).order_by('last_name', 'first_name')
         club_fencers_z = club_members.filter(gender=FencerProfile.Gender.FEMALE).order_by('last_name', 'first_name')
         club_fencers_undefined = club_members.filter(gender__isnull=True).order_by('last_name', 'first_name')
+        club_active = club_members.filter(user__isnull=False)
+        club_inactive = club_members.filter(user__isnull=True)
+        club_active_m = club_active.filter(gender=FencerProfile.Gender.MALE).order_by('last_name', 'first_name')
+        club_active_z = club_active.filter(gender=FencerProfile.Gender.FEMALE).order_by('last_name', 'first_name')
+        club_active_undefined = club_active.filter(gender__isnull=True).order_by('last_name', 'first_name')
+        club_inactive_m = club_inactive.filter(gender=FencerProfile.Gender.MALE).order_by('last_name', 'first_name')
+        club_inactive_z = club_inactive.filter(gender=FencerProfile.Gender.FEMALE).order_by('last_name', 'first_name')
+        club_inactive_undefined = club_inactive.filter(gender__isnull=True).order_by('last_name', 'first_name')
     
     context = {
         'profile': profile,
@@ -459,6 +469,12 @@ def about_me(request):
         'club_fencers_m': club_fencers_m,
         'club_fencers_z': club_fencers_z,
         'club_fencers_undefined': club_fencers_undefined,
+        'club_active_m': club_active_m,
+        'club_active_z': club_active_z,
+        'club_active_undefined': club_active_undefined,
+        'club_inactive_m': club_inactive_m,
+        'club_inactive_z': club_inactive_z,
+        'club_inactive_undefined': club_inactive_undefined,
         'initial_view': view_param,
     }
     return render(request, 'fencers/about_me.html', context)

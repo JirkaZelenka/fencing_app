@@ -713,3 +713,53 @@ body[data-theme="dark"] .table thead th {
     display: none;
 }
 
+.member-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.45rem;
+    vertical-align: middle;
+}
+
+.role-badge {
+    --badge-color: #6c757d;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background-color: var(--badge-color);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.role-badge i {
+    font-size: 1rem;
+    line-height: 1;
+    color: #fff;
+}
+
+.current-user-highlight {
+    background: #fff3cd;
+    color: #5c4300;
+    border: 1px solid #f2d47a;
+    border-radius: 0.35rem;
+    padding: 0.05rem 0.35rem;
+}
+
+[data-theme="dark"] .current-user-highlight {
+    background: #6a4d00;
+    color: #ffefc2;
+    border-color: #a37b00;
+}
+
+.joined-user-name {
+    font-weight: 700;
+}
+
+.club-people-list li {
+    margin-bottom: 0.45rem;
+}
+

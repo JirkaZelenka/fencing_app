@@ -2,23 +2,118 @@
 
 {% block title %}Statistiky - Šermířská aplikace{% endblock %}
 
+{% block extra_css %}
+<style>
+    .hall-of-fame-row td {
+        background-color: #fff3cd !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>Statistiky</h1>
 
 {% if club %}
 <div class="mb-4">
     <div class="btn-group" role="group" aria-label="Toggle statistics view">
-        <input type="radio" class="btn-check" name="statisticsToggle" id="individualToggle" autocomplete="off" {% if initial_view != 'club' %}checked{% endif %}>
+        <input type="radio" class="btn-check" name="statisticsToggle" id="individualToggle" autocomplete="off" {% if initial_view == 'individual' %}checked{% endif %}>
         <label class="btn btn-outline-primary" for="individualToggle">Moje statistiky</label>
         
         <input type="radio" class="btn-check" name="statisticsToggle" id="clubToggle" autocomplete="off" {% if initial_view == 'club' %}checked{% endif %}>
         <label class="btn btn-outline-primary" for="clubToggle">Klub</label>
+
+        <input type="radio" class="btn-check" name="statisticsToggle" id="hallOfFameToggle" autocomplete="off" {% if initial_view == 'hall_of_fame' %}checked{% endif %}>
+        <label class="btn btn-outline-primary" for="hallOfFameToggle">Síň slávy</label>
+    </div>
+</div>
+
+<div id="hallOfFameStats" class="statistics-section" {% if initial_view != 'hall_of_fame' %}style="display: none;"{% endif %}>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Síň slávy</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="hallOfFameTable">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="fencer" style="cursor: pointer;">
+                                        Šermíř <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="tournament" style="cursor: pointer;">
+                                        Turnaj <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="date" style="cursor: pointer;">
+                                        Datum <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="position" style="cursor: pointer;">
+                                        Umístění <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="participants_count" style="cursor: pointer;">
+                                        Počet <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="percentile" style="cursor: pointer;">
+                                        Percentil <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="wins" style="cursor: pointer;">
+                                        Výhry <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="losses" style="cursor: pointer;">
+                                        Prohry <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="touches_scored" style="cursor: pointer;">
+                                        Zasazené zásahy <span class="sort-indicator">↕</span>
+                                    </th>
+                                    <th class="sortable" data-sort="touches_received" style="cursor: pointer;">
+                                        Obdržené zásahy <span class="sort-indicator">↕</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participation in hall_of_fame_participations %}
+                                <tr class="hall-of-fame-row" data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
+                                    data-tournament="{{ participation.event.title|lower }}"
+                                    data-date="{{ participation.event.date|date:'Y-m-d' }}"
+                                    data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
+                                    data-percentile="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}"
+                                    data-wins="{{ participation.wins }}"
+                                    data-losses="{{ participation.losses }}"
+                                    data-touches-scored="{{ participation.touches_scored }}"
+                                    data-touches-received="{{ participation.touches_received }}">
+                                    <td>{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}</td>
+                                    <td>{{ participation.event.title }}</td>
+                                    <td>{{ participation.event.date|date:"d.m.Y" }}</td>
+                                    <td data-sort-value="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}">
+                                        {% if participation.position %}{{ participation.position }}. místo{% else %}-{% endif %}
+                                    </td>
+                                    <td data-sort-value="{% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}0{% endif %}">
+                                        {% if participation.event.participants_count %}{{ participation.event.participants_count }}{% else %}-{% endif %}
+                                    </td>
+                                    <td data-sort-value="{% if participation.get_percentile %}{{ participation.get_percentile }}{% else %}999{% endif %}">
+                                        {% if participation.get_percentile %}{{ participation.get_percentile }} %{% else %}-{% endif %}
+                                    </td>
+                                    <td>{{ participation.wins }}</td>
+                                    <td>{{ participation.losses }}</td>
+                                    <td>{{ participation.touches_scored }}</td>
+                                    <td>{{ participation.touches_received }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center">Zatím žádné záznamy v Síni slávy</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
 
 <!-- Individual Statistics Section -->
-<div id="individualStats" class="statistics-section" {% if initial_view == 'club' %}style="display: none;"{% endif %}>
+<div id="individualStats" class="statistics-section" {% if initial_view != 'individual' %}style="display: none;"{% endif %}>
     <div class="card mt-4">
         <div class="card-body">
             <h5 class="card-title">Účasti na turnajích</h5>
@@ -77,7 +172,7 @@
                     </thead>
                     <tbody>
                         {% for participation in participations %}
-                        <tr data-tournament="{{ participation.event.title|lower }}" 
+                        <tr class="{% if participation.is_hall_of_fame %}hall-of-fame-row{% endif %}" data-tournament="{{ participation.event.title|lower }}" 
                             data-date="{{ participation.event.date|date:'Y-m-d' }}"
                             data-location="{{ participation.event.location|default:''|lower }}"
                             data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
@@ -118,12 +213,12 @@
     </div>
 </div>
 
-<!-- Interní miniturnaje Section for Individual Statistics -->
+<!-- UŠL - univerzitní liga section (individual statistics) -->
 <div id="individualHumanitarian" class="row mt-4">
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Interní miniturnaje</h5>
+                <h5 class="card-title">UŠL - univerzitní liga</h5>
                 <div class="table-responsive">
                     <table class="table table-striped" id="individualHumanitarianTable">
                         <thead>
@@ -159,7 +254,7 @@
                         </thead>
                         <tbody>
                             {% for participation in humanitarian_participations %}
-                            <tr data-tournament="{{ participation.event.title|lower }}"
+                            <tr class="{% if participation.is_hall_of_fame %}hall-of-fame-row{% endif %}" data-tournament="{{ participation.event.title|lower }}"
                                 data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                 data-location="{{ participation.event.location|default:''|lower }}"
                                 data-position="{% if participation.position %}{{ participation.position }}{% else %}999{% endif %}"
@@ -186,7 +281,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="9" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="9" class="text-center">Zatím žádné účasti v UŠL</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -272,7 +367,7 @@
                             </thead>
                             <tbody>
                                 {% for participation in club_participations %}
-                                <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
+                                <tr class="{% if participation.is_hall_of_fame %}hall-of-fame-row{% endif %}" data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
                                     data-tournament="{{ participation.event.title|lower }}" 
                                     data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                     data-location="{{ participation.event.location|default:''|lower }}"
@@ -316,7 +411,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                <h5 class="card-title">Interní miniturnaje</h5>
+                <h5 class="card-title">UŠL - univerzitní liga</h5>
                     <div class="table-responsive">
                         <table class="table table-striped" id="clubHumanitarianTable">
                             <thead>
@@ -355,7 +450,7 @@
                             </thead>
                             <tbody>
                             {% for participation in club_humanitarian_participations %}
-                            <tr data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
+                            <tr class="{% if participation.is_hall_of_fame %}hall-of-fame-row{% endif %}" data-fencer="{% if participation.fencer.user %}{{ participation.fencer.user.get_full_name|default:participation.fencer.user.username }}{% else %}{{ participation.fencer.first_name }} {{ participation.fencer.last_name }}{% endif %}|lower"
                                 data-tournament="{{ participation.event.title|lower }}"
                                 data-date="{{ participation.event.date|date:'Y-m-d' }}"
                                 data-location="{{ participation.event.location|default:''|lower }}"
@@ -384,7 +479,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                <td colspan="10" class="text-center">Zatím žádné interní turnaje</td>
+                                <td colspan="10" class="text-center">Zatím žádné účasti v UŠL</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -404,22 +499,35 @@
 document.addEventListener('DOMContentLoaded', function() {
     const individualToggle = document.getElementById('individualToggle');
     const clubToggle = document.getElementById('clubToggle');
+    const hallOfFameToggle = document.getElementById('hallOfFameToggle');
     const individualStats = document.getElementById('individualStats');
     const clubStats = document.getElementById('clubStats');
+    const hallOfFameStats = document.getElementById('hallOfFameStats');
     const individualHumanitarian = document.getElementById('individualHumanitarian');
     
-    if (individualToggle && clubToggle) {
+    if (individualToggle && clubToggle && hallOfFameToggle) {
         individualToggle.addEventListener('change', function() {
             if (this.checked) {
                 individualStats.style.display = 'block';
                 if (individualHumanitarian) individualHumanitarian.style.display = 'block';
                 if (clubStats) clubStats.style.display = 'none';
+                if (hallOfFameStats) hallOfFameStats.style.display = 'none';
             }
         });
         
         clubToggle.addEventListener('change', function() {
             if (this.checked) {
                 if (clubStats) clubStats.style.display = 'block';
+                individualStats.style.display = 'none';
+                if (individualHumanitarian) individualHumanitarian.style.display = 'none';
+                if (hallOfFameStats) hallOfFameStats.style.display = 'none';
+            }
+        });
+
+        hallOfFameToggle.addEventListener('change', function() {
+            if (this.checked) {
+                if (hallOfFameStats) hallOfFameStats.style.display = 'block';
+                if (clubStats) clubStats.style.display = 'none';
                 individualStats.style.display = 'none';
                 if (individualHumanitarian) individualHumanitarian.style.display = 'none';
             }
@@ -881,6 +989,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (clubToggle && clubStats) {
         clubToggle.checked = true;
         clubStats.style.display = 'block';
+        if (hallOfFameStats) hallOfFameStats.style.display = 'none';
+        if (individualStats) individualStats.style.display = 'none';
+        if (individualHumanitarian) individualHumanitarian.style.display = 'none';
+    }
+    {% elif initial_view == 'hall_of_fame' %}
+    if (hallOfFameToggle && hallOfFameStats) {
+        hallOfFameToggle.checked = true;
+        hallOfFameStats.style.display = 'block';
+        if (clubStats) clubStats.style.display = 'none';
         if (individualStats) individualStats.style.display = 'none';
         if (individualHumanitarian) individualHumanitarian.style.display = 'none';
     }
@@ -1108,6 +1225,116 @@ document.addEventListener('DOMContentLoaded', function() {
             header.addEventListener('click', function() {
                 const sortColumn = this.getAttribute('data-sort');
                 sortClubHumanitarianTable(sortColumn);
+            });
+        });
+    }
+
+    // Hall of Fame table sorting
+    const hallOfFameTable = document.getElementById('hallOfFameTable');
+    if (hallOfFameTable) {
+        const hallRows = Array.from(hallOfFameTable.querySelectorAll('tbody tr'));
+        let hallCurrentSort = { column: null, direction: 'asc' };
+
+        function sortHallOfFameTable(column) {
+            const tbody = hallOfFameTable.querySelector('tbody');
+            const dataRows = hallRows.filter(row => !row.querySelector('td[colspan]') && (row.hasAttribute('data-tournament') || row.hasAttribute('data-fencer')));
+
+            if (hallCurrentSort.column === column) {
+                hallCurrentSort.direction = hallCurrentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                hallCurrentSort.column = column;
+                hallCurrentSort.direction = 'asc';
+            }
+
+            dataRows.sort((a, b) => {
+                let aVal, bVal;
+
+                switch(column) {
+                    case 'fencer':
+                        aVal = a.getAttribute('data-fencer') || '';
+                        bVal = b.getAttribute('data-fencer') || '';
+                        break;
+                    case 'tournament':
+                        aVal = a.getAttribute('data-tournament') || '';
+                        bVal = b.getAttribute('data-tournament') || '';
+                        break;
+                    case 'date':
+                        aVal = a.getAttribute('data-date') || '';
+                        bVal = b.getAttribute('data-date') || '';
+                        break;
+                    case 'participants_count':
+                        const aCountCells = Array.from(a.querySelectorAll('td[data-sort-value]'));
+                        const bCountCells = Array.from(b.querySelectorAll('td[data-sort-value]'));
+                        aVal = aCountCells.length > 1 ? parseInt(aCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        bVal = bCountCells.length > 1 ? parseInt(bCountCells[1].getAttribute('data-sort-value') || '0') : 0;
+                        return aVal - bVal;
+                    case 'position':
+                        aVal = parseInt(a.getAttribute('data-position')) || 999;
+                        bVal = parseInt(b.getAttribute('data-position')) || 999;
+                        break;
+                    case 'percentile':
+                        aVal = parseFloat(a.getAttribute('data-percentile') || '999');
+                        bVal = parseFloat(b.getAttribute('data-percentile') || '999');
+                        break;
+                    case 'wins':
+                        aVal = parseInt(a.getAttribute('data-wins')) || 0;
+                        bVal = parseInt(b.getAttribute('data-wins')) || 0;
+                        break;
+                    case 'losses':
+                        aVal = parseInt(a.getAttribute('data-losses')) || 0;
+                        bVal = parseInt(b.getAttribute('data-losses')) || 0;
+                        break;
+                    case 'touches_scored':
+                        aVal = parseInt(a.getAttribute('data-touches-scored')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-scored')) || 0;
+                        break;
+                    case 'touches_received':
+                        aVal = parseInt(a.getAttribute('data-touches-received')) || 0;
+                        bVal = parseInt(b.getAttribute('data-touches-received')) || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (typeof aVal === 'string') {
+                    return hallCurrentSort.direction === 'asc'
+                        ? aVal.localeCompare(bVal)
+                        : bVal.localeCompare(aVal);
+                } else {
+                    return hallCurrentSort.direction === 'asc'
+                        ? aVal - bVal
+                        : bVal - aVal;
+                }
+            });
+
+            const noDataRow = hallRows.find(row => row.querySelector('td[colspan]'));
+            dataRows.forEach(row => tbody.appendChild(row));
+            if (noDataRow) {
+                tbody.appendChild(noDataRow);
+            }
+
+            updateHallOfFameSortIndicators();
+        }
+
+        function updateHallOfFameSortIndicators() {
+            const headers = hallOfFameTable.querySelectorAll('th.sortable');
+            headers.forEach(header => {
+                const indicator = header.querySelector('.sort-indicator');
+                const sortColumn = header.getAttribute('data-sort');
+
+                if (sortColumn === hallCurrentSort.column) {
+                    indicator.textContent = hallCurrentSort.direction === 'asc' ? ' ↑' : ' ↓';
+                } else {
+                    indicator.textContent = ' ↕';
+                }
+            });
+        }
+
+        const hallSortableHeaders = hallOfFameTable.querySelectorAll('th.sortable');
+        hallSortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const sortColumn = this.getAttribute('data-sort');
+                sortHallOfFameTable(sortColumn);
             });
         });
     }

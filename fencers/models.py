@@ -171,7 +171,7 @@ class FencerProfile(models.Model):
 class Event(models.Model):
     class EventType(models.TextChoices):
         TOURNAMENT = 'tournament', "Turnaj"
-        HUMANITARIAN = 'humanitarian', "Hum. turnaj"
+        HUMANITARIAN = 'humanitarian', "UŠL - univerzitní liga"
         OTHER = 'other', "Ostatní akce"
     
     class Gender(models.TextChoices):
@@ -200,7 +200,7 @@ class Event(models.Model):
         null=True,
         blank=True,
         verbose_name="Počet účastníků",
-        help_text="Povinné pro Turnaj a Hum. turnaj"
+        help_text="Povinné pro Turnaj a UŠL - univerzitní liga"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -210,7 +210,7 @@ class Event(models.Model):
         if self.event_type in [self.EventType.TOURNAMENT, self.EventType.HUMANITARIAN]:
             if not self.participants_count or self.participants_count <= 0:
                 raise ValidationError({
-                    'participants_count': 'Počet účastníků je povinný pro Turnaj a Hum. turnaj a musí být větší než 0.'
+                    'participants_count': 'Počet účastníků je povinný pro Turnaj a UŠL - univerzitní liga a musí být větší než 0.'
                 })
     
     class Meta:
@@ -231,6 +231,7 @@ class EventParticipation(models.Model):
     touches_scored = models.IntegerField(default=0, verbose_name="Zasazené zásahy")
     touches_received = models.IntegerField(default=0, verbose_name="Obdržené zásahy")
     points = models.FloatField(null=True, blank=True, verbose_name="Body")
+    is_hall_of_fame = models.BooleanField(default=False, verbose_name="Síň slávy")
     
     class Meta:
         verbose_name = "Účast na akci"

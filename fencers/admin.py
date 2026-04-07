@@ -158,8 +158,8 @@ class BadgeAdmin(admin.ModelAdmin):
 
 @admin.register(EventParticipation)
 class EventParticipationAdmin(admin.ModelAdmin):
-    list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses', 'points']
-    list_filter = ['event', 'event__date']
+    list_display = ['get_fencer_name', 'event', 'position', 'wins', 'losses', 'points', 'is_hall_of_fame']
+    list_filter = ['event', 'event__date', 'is_hall_of_fame']
     search_fields = ['fencer__user__username', 'fencer__user__email', 'fencer__first_name', 'fencer__last_name', 'event__title']
     autocomplete_fields = ['fencer']
     
@@ -240,7 +240,7 @@ class EventAdmin(admin.ModelAdmin):
         if obj.event_type in [Event.EventType.TOURNAMENT, Event.EventType.HUMANITARIAN]:
             if not obj.participants_count or obj.participants_count <= 0:
                 from django.contrib import messages
-                messages.error(request, 'Počet účastníků je povinný pro Turnaj a Hum. turnaj a musí být větší než 0.')
+                messages.error(request, 'Počet účastníků je povinný pro Turnaj a UŠL - univerzitní liga a musí být větší než 0.')
                 return
         obj.save()
 

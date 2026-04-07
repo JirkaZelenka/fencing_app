@@ -144,7 +144,7 @@ EVENT_TYPE_META = {
         'class_suffix': 'tournament',
     },
     Event.EventType.HUMANITARIAN: {
-        'label': "Hum. turnaj",
+        'label': "UŠL - univerzitní liga",
         'class_suffix': 'humanitarian',
     },
     Event.EventType.OTHER: {
@@ -575,9 +575,12 @@ def statistics_individual(request):
     club_fencers = None
     club_participations = None
     club_humanitarian_participations = None
+    hall_of_fame_participations = None
     
     # Get URL parameters
-    view_param = request.GET.get('view', 'individual')  # 'individual' or 'club'
+    view_param = request.GET.get('view', 'individual')  # 'individual', 'club', or 'hall_of_fame'
+    if view_param not in {'individual', 'club', 'hall_of_fame'}:
+        view_param = 'individual'
     tournament_filter = request.GET.get('tournament', '').strip()
     
     # Apply tournament filter to individual participations if provided
@@ -620,9 +623,11 @@ def statistics_individual(request):
         club_participations = club_participations_qs.exclude(
             event__event_type=Event.EventType.HUMANITARIAN
         )
+        hall_of_fame_participations = club_participations.filter(is_hall_of_fame=True)
     else:
         gender_filter = ''
         club_humanitarian_participations = EventParticipation.objects.none()
+        hall_of_fame_participations = EventParticipation.objects.none()
     
     context = {
         'participations': individual_participations,
@@ -630,6 +635,7 @@ def statistics_individual(request):
         'club': club,
         'club_participations': club_participations,
         'club_humanitarian_participations': club_humanitarian_participations,
+        'hall_of_fame_participations': hall_of_fame_participations,
         'initial_view': view_param,
         'initial_tournament_filter': tournament_filter,
         'initial_gender_filter': gender_filter if profile.club else '',

@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
 from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
@@ -19,6 +20,7 @@ from .models import (
     UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
 )
 from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm, RegistrationForm
+from .i18n import tr
 
 # Profile self-match: failed birth-year check blocks retries for this many minutes.
 PROFILE_JOIN_BLOCK_SECONDS = 120
@@ -196,7 +198,7 @@ def login_view(request):
                 return redirect('match_profile')
             return redirect('home')
         else:
-            messages.error(request, 'Uživatelské jméno nebo heslo není správné.')
+            messages.error(request, tr(request, 'Uživatelské jméno nebo heslo není správné.'))
     
     return render(request, 'fencers/login.html')
 
@@ -217,12 +219,25 @@ def register_view(request):
                 last_name='',
             )
             login(request, user)
-            messages.success(request, 'Účet byl úspěšně vytvořen! Nyní se prosím přiřaďte k jednomu z předpřipravených profilů.')
+            messages.success(
+                request,
+                tr(request, 'Účet byl úspěšně vytvořen! Nyní se prosím přiřaďte k jednomu z předpřipravených profilů.')
+            )
             return redirect('match_profile')
     else:
         form = RegistrationForm()
     
     return render(request, 'fencers/register.html', {'form': form})
+
+
+@require_http_methods(["POST"])
+def set_language(request):
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/"
+    language = request.POST.get("language", "cs")
+    if language not in {"cs", "en"}:
+        language = "cs"
+    request.session["app_language"] = language
+    return redirect(next_url)
 
 
 @login_required

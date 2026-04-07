@@ -74,3 +74,20 @@ class RequireFencerProfileMiddleware:
             return None
 
         return redirect("match_profile")
+
+
+class AppLanguageMiddleware:
+    """Stores language preference in request/session for app-level translations."""
+
+    SUPPORTED_LANGUAGES = {"cs", "en"}
+    SESSION_KEY = "app_language"
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        lang = request.session.get(self.SESSION_KEY, "cs")
+        if lang not in self.SUPPORTED_LANGUAGES:
+            lang = "cs"
+        request.app_language = lang
+        return self.get_response(request)

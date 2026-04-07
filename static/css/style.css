@@ -763,3 +763,54 @@ body[data-theme="dark"] .table thead th {
     margin-bottom: 0.45rem;
 }
 
+.language-flag {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.language-toggle-btn {
+    width: 40px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    background: transparent;
+    line-height: 0;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.language-toggle-btn:hover {
+    border-color: #fff;
+    transform: translateY(-1px);
+}
+
+.language-toggle-btn.dark-variant {
+    border-color: rgba(0, 0, 0, 0.35);
+}
+
+.language-toggle-btn.dark-variant:hover {
+    border-color: rgba(0, 0, 0, 0.65);
+}
+
+.header-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+}
+
+.header-action-btn #themeIcon {
+    line-height: 1;
+    font-size: 0.95rem;
+}
+
+.logout-action-btn i {
+    line-height: 1;
+    font-size: 1rem;
+}
+

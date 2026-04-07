@@ -2,8 +2,16 @@
 DONE: přepsat do skills
 - napojení na exitující účty - s propmptem na potvrzení + Rok narození
 - líp udělat ten seznam, jen jména + stav napojení -> případně zámeček.
+- badges pro uživatele -> využiji i v HpP
+- základy angličtiny, switch
 
-##########################################xxx
+Important info:
+Added. You now have a translation sync command:
+New file: fencers/management/commands/sync_translations.py
+Command: python manage.py sync_translations
+
+
+##########################################
 TODO:
 
 - bodíky za turnaj - pitomý sloupec se neukazuje na jedné tabulce - Klubs
@@ -28,19 +36,12 @@ Masíčko - možnit drag and drop při tvrobě listu, na řazení. lepší i pro
     - opravy s návody a fotkami
     - proklik na nářadí, stejně jako u výbavy
 
+- hele neměl jsem kdysi u té výbavy náhodou vdě ceny, Ruby a něco? nebo zobrazuju schválně průměr, ale bez linku? sakra, tak ty linky a ceny na stránkách mi opravdu zmizely. sakra.
+DB je na to ready. ale chybí to vyplnění co předtím bylo. nahrát, a udělat dump data. prokliky pak skoro fungují.
 
-- šítky pro lidi, co mají funkci - aby bylo v seznamu jasné, koho s čím zkontaktovat
-- Návrh badge stylu (90s videogame vibe):
-  - Trenér: tmavě modrý pin + píšťalka
-  - Zbrojíř: ocelově šedý pin + klíč / křížené nářadí
-  - Veterán: vínově červený pin + hvězda
-  - Správce pokladny: zlatý pin + mince
-  - Dohlížitel: fialový pin + oko
-
-check:
-- highlight mého jména v tabulce, všechny aktivní trochu tučně, taky větší badge, modrý oprava, šedivý na meč, nový Nováček a Senior,  a taky sorting neaktivní
-- co přidat ještě "pokročilý", aby každý byl něco? a Richardovi a Aničce "Král a Královna" - korunku?
-
-Angličtina pro cizince as well??
+Badges: co přidat ještě "pokročilý", aby každý byl něco? 
+a R a A "Král a Královna" - korunku?
+a přidat pohár/medaile pro ty, co nedávno něco vyhráli !
+-> přidat někam legendu
 
 - možnost si uploadnout profilovku

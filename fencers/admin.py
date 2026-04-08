@@ -113,7 +113,7 @@ class FencerProfileAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__email', 'first_name', 'last_name', 'phone']
     autocomplete_fields = ['user']
     filter_horizontal = ('badges',)
-    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name', 'badges')
+    fields = ('user', 'club', 'phone', 'gender', 'birth_year', 'first_name', 'last_name', 'profile_photo', 'badges')
     actions = ['unpair_selected_profiles']
     
     def unpair_selected_profiles(self, request, queryset):

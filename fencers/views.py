@@ -1,3 +1,4 @@
+import os
 import re
 import random
 import string
@@ -13,10 +14,19 @@ from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
+from django.urls import reverse
 from django.forms import modelformset_factory
 from django.core.files.storage import default_storage
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
+MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024  # 2 MB
+PROFILE_PHOTO_ALLOWED_CONTENT_TYPES = frozenset({
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+})
+
 from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
@@ -476,7 +486,38 @@ def about_me(request):
     profile = getattr(user, 'fencer_profile', None)
     if not profile:
         return redirect('match_profile')
-    
+
+    if request.method == "POST" and request.FILES.get("profile_photo"):
+        uploaded = request.FILES["profile_photo"]
+        return_view = request.POST.get("return_view", "me")
+        if uploaded.size > MAX_PROFILE_PHOTO_BYTES:
+            messages.error(
+                request,
+                "Soubor je příliš velký. Maximální velikost profilové fotky je 2 MB.",
+            )
+        else:
+            ct = (getattr(uploaded, "content_type", None) or "").strip()
+            ext = os.path.splitext(uploaded.name)[1].lower()
+            ext_ok = ext in (".jpg", ".jpeg", ".png", ".gif", ".webp")
+            type_ok = (ct in PROFILE_PHOTO_ALLOWED_CONTENT_TYPES) if ct else ext_ok
+            if not type_ok:
+                messages.error(
+                    request,
+                    "Povolené jsou pouze obrázky ve formátu JPEG, PNG, GIF nebo WebP.",
+                )
+            else:
+                profile.profile_photo = uploaded
+                try:
+                    profile.save()
+                except Exception:
+                    messages.error(
+                        request,
+                        "Soubor se nepodařilo uložit jako obrázek. Zkuste jiný soubor.",
+                    )
+                else:
+                    messages.success(request, "Profilová fotka byla nahrána.")
+        return redirect(f"{reverse('about_me')}?view={return_view}")
+
     view_param = request.GET.get('view', 'me')
     
     tournament_participations = EventParticipation.objects.filter(

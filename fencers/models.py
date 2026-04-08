@@ -128,6 +128,12 @@ class FencerProfile(models.Model):
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Jméno")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Příjmení")
     birth_year = models.IntegerField(null=True, blank=True, verbose_name="Rok narození")
+    profile_photo = models.ImageField(
+        upload_to="profile_photos/",
+        null=True,
+        blank=True,
+        verbose_name="Profilová fotka",
+    )
     badges = models.ManyToManyField(Badge, blank=True, related_name="fencers", verbose_name="Badges")
     
     def get_full_name(self):

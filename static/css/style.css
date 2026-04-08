@@ -853,6 +853,143 @@ body[data-theme="dark"] .table thead th {
     margin-bottom: 0.45rem;
 }
 
+/* Info: profile photo upload */
+.profile-photo-slot {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    border-radius: 0.35rem;
+    overflow: hidden;
+}
+
+.profile-photo-thumb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.profile-photo-upload-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    cursor: pointer;
+    border-radius: 0.35rem;
+    border: 1px dashed var(--border-color);
+    background: #e9ecef;
+    color: #6c757d;
+    transition: background 0.15s, color 0.15s;
+}
+
+.profile-photo-upload-label:hover {
+    background: #dee2e6;
+    color: #495057;
+}
+
+[data-theme="dark"] .profile-photo-upload-label {
+    background: #2d3338;
+    border-color: #495057;
+    color: #adb5bd;
+}
+
+[data-theme="dark"] .profile-photo-upload-label:hover {
+    background: #3d4449;
+    color: #e9ecef;
+}
+
+.profile-photo-upload-plus {
+    font-size: 1.75rem;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.profile-photo-upload-label--has-photo {
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.profile-photo-slot:hover .profile-photo-upload-label--has-photo {
+    opacity: 1;
+}
+
+/* Info: crop modal — square viewport, image positioned inside */
+.profile-crop-frame-wrap {
+    position: relative;
+    width: min(280px, 85vw);
+    height: min(280px, 85vw);
+    overflow: hidden;
+    border-radius: 0.35rem;
+    border: 1px solid var(--border-color);
+    background: #0d1117;
+    touch-action: none;
+    cursor: grab;
+}
+
+.profile-crop-frame-wrap:active {
+    cursor: grabbing;
+}
+
+.profile-crop-image {
+    position: absolute;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Klub: photo pouze po najetí na jméno (bez obrázku v DOM do té doby — doplní JS) */
+.club-member-with-photo {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.club-photo-hover-preview {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translate(0.5rem, -50%);
+    z-index: 1060;
+    pointer-events: none;
+    border-radius: 0.35rem;
+    overflow: hidden;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
+    border: 2px solid var(--card-bg);
+    background: var(--card-bg);
+    line-height: 0;
+    width: 120px;
+    height: 120px;
+}
+
+.club-photo-hover-preview img {
+    display: block;
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+}
+
+.club-member-with-photo:hover .club-photo-hover-preview,
+.club-member-with-photo:focus-within .club-photo-hover-preview {
+    display: block;
+}
+
+@media (max-width: 767.98px) {
+    .club-photo-hover-preview {
+        left: auto;
+        right: 0;
+        top: 100%;
+        transform: translate(0, 0.35rem);
+    }
+}
+
 .language-flag {
     width: 100%;
     height: 100%;

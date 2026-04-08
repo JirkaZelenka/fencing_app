@@ -1,0 +1,16 @@
+{% comment %}
+  Renders a club member name; if they have a profile photo, shows a hover preview.
+  Expects: fencer_profile, profile (current user's FencerProfile)
+{% endcomment %}
+{% if fencer_profile.profile_photo %}
+<span class="club-member-with-photo">
+    <span class="{% if not fencer_profile.user %}text-muted{% else %}joined-user-name{% endif %} {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
+        {{ fencer_profile.display_name }}
+    </span>
+    <span class="club-photo-hover-preview" data-photo-url="{{ fencer_profile.profile_photo.url }}" aria-hidden="true"></span>
+</span>
+{% else %}
+<span class="{% if not fencer_profile.user %}text-muted{% else %}joined-user-name{% endif %} {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
+    {{ fencer_profile.display_name }}
+</span>
+{% endif %}

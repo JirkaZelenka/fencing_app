@@ -23,9 +23,29 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Profil</h5>
-                    <p><strong>Jméno:</strong> {{ profile.display_name }}</p>
+                    <form method="post" action="{% url 'about_me' %}" enctype="multipart/form-data" class="profile-photo-form mb-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="return_view" value="{{ initial_view }}">
+                        <div class="d-flex gap-3 align-items-start flex-wrap">
+                            <div class="profile-photo-slot">
+                                {% if profile.profile_photo %}
+                                <img src="{{ profile.profile_photo.url }}" alt="" class="profile-photo-thumb" width="96" height="96">
+                                {% endif %}
+                                <label for="id_profile_photo" class="profile-photo-upload-label{% if profile.profile_photo %} profile-photo-upload-label--has-photo{% endif %}">
+                                    <span class="profile-photo-upload-plus" aria-hidden="true">+</span>
+                                    <span class="visually-hidden">Nahrát profilovou fotku</span>
+                                </label>
+                                <input type="file" name="profile_photo" id="id_profile_photo" class="d-none" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp">
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <p class="mb-1"><strong>Jméno:</strong> {{ profile.display_name }}</p>
+                                {% if profile %}
+                                <p class="mb-0"><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
                     {% if profile %}
-                        <p><strong>Klub:</strong> {{ profile.club|default:"Nepřiřazeno" }}</p>
                         {% if profile.ordered_badges %}
                             <p class="mb-1"><strong>Role:</strong></p>
                             <div class="member-badges mb-2">
@@ -128,9 +148,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_active_m %}
                         <li>
-                            <span class="{% if not fencer_profile.user %}text-muted{% else %}joined-user-name{% endif %} {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -156,9 +174,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_active_z %}
                         <li>
-                            <span class="{% if not fencer_profile.user %}text-muted{% else %}joined-user-name{% endif %} {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -187,9 +203,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_active_undefined %}
                         <li>
-                            <span class="{% if not fencer_profile.user %}text-muted{% else %}joined-user-name{% endif %} {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -219,9 +233,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_inactive_m %}
                         <li>
-                            <span class="text-muted {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -247,9 +259,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_inactive_z %}
                         <li>
-                            <span class="text-muted {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -278,9 +288,7 @@
                     <ul class="club-people-list">
                         {% for fencer_profile in club_inactive_undefined %}
                         <li>
-                            <span class="text-muted {% if fencer_profile.id == profile.id %}current-user-highlight{% endif %}">
-                                {{ fencer_profile.display_name }}
-                            </span>
+                            {% include "fencers/includes/club_member_name.html" with fencer_profile=fencer_profile profile=profile %}
                             {% if fencer_profile.ordered_badges %}
                                 <span class="member-badges">
                                     {% for badge in fencer_profile.ordered_badges %}
@@ -305,6 +313,26 @@
     </div>
 </div>
 {% endif %}
+
+<div class="modal fade" id="profilePhotoCropModal" tabindex="-1" aria-labelledby="profilePhotoCropModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="profilePhotoCropModalLabel">Výřez fotky</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-crop-frame-wrap mx-auto" id="profileCropFrame">
+                    <img src="" alt="" id="profileCropImage" class="profile-crop-image" draggable="false">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zrušit</button>
+                <button type="button" class="btn btn-primary" id="profileCropApply">Použít a nahrát</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -315,11 +343,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const infoPersonal = document.getElementById('infoPersonal');
     const infoClubSection = document.getElementById('infoClubSection');
     
+    var returnViewInput = document.querySelector('input[name="return_view"]');
     if (infoMeToggle && infoClubToggle && infoClubSection) {
         infoMeToggle.addEventListener('change', function() {
             if (this.checked) {
                 infoPersonal.style.display = 'block';
                 infoClubSection.style.display = 'none';
+                if (returnViewInput) returnViewInput.value = 'me';
             }
         });
         
@@ -327,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.checked) {
                 infoClubSection.style.display = 'block';
                 infoPersonal.style.display = 'none';
+                if (returnViewInput) returnViewInput.value = 'club';
             }
         });
     }
@@ -338,6 +369,170 @@ document.addEventListener('DOMContentLoaded', function() {
         if (infoPersonal) infoPersonal.style.display = 'none';
     }
     {% endif %}
+
+    document.querySelectorAll('.club-member-with-photo').forEach(function(wrap) {
+        wrap.addEventListener('mouseenter', function() {
+            var holder = wrap.querySelector('.club-photo-hover-preview');
+            if (!holder || holder.dataset.photoLoaded === '1') return;
+            var url = holder.getAttribute('data-photo-url');
+            if (!url) return;
+            holder.dataset.photoLoaded = '1';
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            holder.appendChild(img);
+        });
+    });
+
+    var photoInput = document.getElementById('id_profile_photo');
+    var cropModalEl = document.getElementById('profilePhotoCropModal');
+    var cropFrame = document.getElementById('profileCropFrame');
+    var cropImg = document.getElementById('profileCropImage');
+    var cropApplyBtn = document.getElementById('profileCropApply');
+    if (photoInput && cropModalEl && cropFrame && cropImg && cropApplyBtn && typeof bootstrap !== 'undefined') {
+        var OUT_SIZE = 512;
+        var MAX_BYTES = 2 * 1024 * 1024;
+        var pendingUrl = null;
+        var cropState = { x: 0, y: 0, dw: 0, dh: 0, iw: 0, ih: 0 };
+        var dragging = false;
+        var dragStart = { cx: 0, cy: 0, ox: 0, oy: 0 };
+        var applyingCrop = false;
+
+        function frameSize() {
+            return cropFrame.clientWidth || 280;
+        }
+
+        function clampCrop() {
+            var F = frameSize();
+            cropState.x = Math.min(0, Math.max(F - cropState.dw, cropState.x));
+            cropState.y = Math.min(0, Math.max(F - cropState.dh, cropState.y));
+        }
+
+        function applyCropTransform() {
+            cropImg.style.width = cropState.dw + 'px';
+            cropImg.style.height = cropState.dh + 'px';
+            cropImg.style.left = cropState.x + 'px';
+            cropImg.style.top = cropState.y + 'px';
+        }
+
+        function layoutCropFromNatural() {
+            var F = frameSize();
+            var iw = cropState.iw;
+            var ih = cropState.ih;
+            var s = Math.max(F / iw, F / ih);
+            cropState.dw = iw * s;
+            cropState.dh = ih * s;
+            cropState.x = (F - cropState.dw) / 2;
+            cropState.y = (F - cropState.dh) / 2;
+            clampCrop();
+            applyCropTransform();
+        }
+
+        photoInput.addEventListener('change', function() {
+            var f = this.files && this.files[0];
+            if (!f) return;
+            if (f.size > MAX_BYTES) {
+                alert('Soubor je příliš velký (max. 2 MB).');
+                this.value = '';
+                return;
+            }
+            if (pendingUrl) {
+                URL.revokeObjectURL(pendingUrl);
+                pendingUrl = null;
+            }
+            pendingUrl = URL.createObjectURL(f);
+            cropImg.onload = function() {
+                cropImg.onload = null;
+                var modal = bootstrap.Modal.getOrCreateInstance(cropModalEl);
+                cropModalEl.addEventListener('shown.bs.modal', function layoutWhenVisible() {
+                    cropModalEl.removeEventListener('shown.bs.modal', layoutWhenVisible);
+                    cropState.iw = cropImg.naturalWidth;
+                    cropState.ih = cropImg.naturalHeight;
+                    layoutCropFromNatural();
+                });
+                modal.show();
+            };
+            cropImg.src = pendingUrl;
+        });
+
+        cropFrame.addEventListener('pointerdown', function(e) {
+            if (e.button !== 0) return;
+            dragging = true;
+            dragStart.cx = e.clientX;
+            dragStart.cy = e.clientY;
+            dragStart.ox = cropState.x;
+            dragStart.oy = cropState.y;
+            cropFrame.setPointerCapture(e.pointerId);
+        });
+
+        cropFrame.addEventListener('pointermove', function(e) {
+            if (!dragging) return;
+            cropState.x = dragStart.ox + (e.clientX - dragStart.cx);
+            cropState.y = dragStart.oy + (e.clientY - dragStart.cy);
+            clampCrop();
+            applyCropTransform();
+        });
+
+        cropFrame.addEventListener('pointerup', function(e) {
+            dragging = false;
+            try {
+                cropFrame.releasePointerCapture(e.pointerId);
+            } catch (err) {}
+        });
+
+        cropFrame.addEventListener('pointercancel', function() {
+            dragging = false;
+        });
+
+        cropApplyBtn.addEventListener('click', function() {
+            var F = frameSize();
+            var left = Math.max(0, cropState.x);
+            var right = Math.min(F, cropState.x + cropState.dw);
+            var top = Math.max(0, cropState.y);
+            var bottom = Math.min(F, cropState.y + cropState.dh);
+            if (right <= left || bottom <= top) return;
+
+            var sx = (left - cropState.x) / cropState.dw * cropState.iw;
+            var sy = (top - cropState.y) / cropState.dh * cropState.ih;
+            var sw = (right - left) / cropState.dw * cropState.iw;
+            var sh = (bottom - top) / cropState.dh * cropState.ih;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = OUT_SIZE;
+            canvas.height = OUT_SIZE;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(cropImg, sx, sy, sw, sh, 0, 0, OUT_SIZE, OUT_SIZE);
+
+            canvas.toBlob(function(blob) {
+                if (!blob) return;
+                applyingCrop = true;
+                var file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                photoInput.files = dt.files;
+                var modal = bootstrap.Modal.getInstance(cropModalEl);
+                if (modal) modal.hide();
+                if (pendingUrl) {
+                    URL.revokeObjectURL(pendingUrl);
+                    pendingUrl = null;
+                }
+                cropImg.src = '';
+                photoInput.form.requestSubmit();
+            }, 'image/jpeg', 0.92);
+        });
+
+        cropModalEl.addEventListener('hidden.bs.modal', function() {
+            if (pendingUrl) {
+                URL.revokeObjectURL(pendingUrl);
+                pendingUrl = null;
+            }
+            cropImg.src = '';
+            if (!applyingCrop) {
+                photoInput.value = '';
+            }
+            applyingCrop = false;
+        });
+    }
 });
 </script>
 {% endblock %}

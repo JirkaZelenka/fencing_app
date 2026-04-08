@@ -1,31 +1,59 @@
 import re
 import random
 import string
+import uuid
 from datetime import date, timedelta, datetime
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib import messages
 from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
+from django.forms import modelformset_factory
+from django.core.files.storage import default_storage
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
 from .models import (
     FencerProfile, Event, EventParticipation, TrainingNote,
     CircuitTraining, CircuitSong, EventPhoto, EventReaction,
-    PaymentStatus, GlossaryTerm, GuideVideo, RulesDocument, EquipmentItem,
-    UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead
+    PaymentStatus, EquipmentItem,
+    UserEquipment, Club, PhotoAlbum, SubAlbum, PhotoLike, News, NewsRead,
+    ContentPage, ContentBlock
 )
-from .forms import TrainingNoteForm, CircuitTrainingForm, EventReactionForm, RegistrationForm
+from .forms import (
+    TrainingNoteForm,
+    CircuitTrainingForm,
+    EventReactionForm,
+    RegistrationForm,
+    ContentPageForm,
+    ContentBlockForm,
+)
 from .i18n import tr
 
 # Profile self-match: failed birth-year check blocks retries for this many minutes.
 PROFILE_JOIN_BLOCK_SECONDS = 120
 _SESSION_PROFILE_JOIN_BLOCK_UNTIL = "profile_join_blocked_until_ts"
 _SESSION_MATCH_PENDING_PROFILE_ID = "match_pending_profile_id"
+
+WIKI_SUBPAGE_LINKS = [
+    ("guides_glossary", "Slovníček", "book-2"),
+    ("guides_videos", "Videonávody", "video"),
+    ("guides_rules", "Pravidla", "file-text"),
+    ("guides_equipment_assembly", "Technická část", "tool"),
+]
+
+staff_required = user_passes_test(lambda u: u.is_authenticated and u.is_staff)
+
+EQUIPMENT_SUBPAGE_LINKS = [
+    ("guides_tools", "Nářadí", "tool"),
+    ("guides_weapon_diagnosis", "Diagnostika zbraně", "stethoscope"),
+    ("guides_blade_assembly", "Sestavení čepele", "sword"),
+    ("guides_equipment_maintenance", "Údržba vybavení", "brush"),
+]
 
 
 def _profile_join_block_state(request):
@@ -1341,62 +1369,138 @@ def notify_payment(request):
     })
 
 
+def _render_content_page(request, section, slug):
+    page = get_object_or_404(
+        ContentPage.objects.prefetch_related("blocks"),
+        section=section,
+        slug=slug,
+        is_published=True,
+    )
+    blocks = page.blocks.filter(is_visible=True).order_by("position", "id")
+    return render(
+        request,
+        "fencers/content_page.html",
+        {
+            "page": page,
+            "blocks": blocks,
+            "is_admin": request.user.is_staff,
+        },
+    )
+
+
+@staff_required
+def content_admin_list(request):
+    pages = ContentPage.objects.all().order_by("section", "title")
+    return render(request, "fencers/content_admin_list.html", {"pages": pages})
+
+
+@staff_required
+def content_admin_edit(request, page_id):
+    page = get_object_or_404(ContentPage, id=page_id)
+    BlockFormSet = modelformset_factory(
+        ContentBlock,
+        form=ContentBlockForm,
+        extra=3,
+        can_delete=True,
+    )
+    queryset = page.blocks.all().order_by("position", "id")
+
+    if request.method == "POST":
+        page_form = ContentPageForm(request.POST, instance=page)
+        formset = BlockFormSet(request.POST, queryset=queryset, prefix="blocks")
+        if page_form.is_valid() and formset.is_valid():
+            page_form.save()
+            instances = formset.save(commit=False)
+            for obj in formset.deleted_objects:
+                obj.delete()
+            for block in instances:
+                block.page = page
+                block.save()
+            messages.success(request, "Obsah stránky byl uložen.")
+            return redirect("content_admin_edit", page_id=page.id)
+    else:
+        page_form = ContentPageForm(instance=page)
+        formset = BlockFormSet(queryset=queryset, prefix="blocks")
+
+    return render(
+        request,
+        "fencers/content_admin_edit.html",
+        {
+            "page": page,
+            "page_form": page_form,
+            "formset": formset,
+        },
+    )
+
+
+@staff_required
+@require_POST
+def content_admin_upload_image(request):
+    uploaded_file = request.FILES.get("image")
+    if not uploaded_file:
+        return JsonResponse({"success": False, "error": "Chybí obrázek."}, status=400)
+
+    if not (uploaded_file.content_type or "").startswith("image/"):
+        return JsonResponse({"success": False, "error": "Soubor není obrázek."}, status=400)
+
+    extension = uploaded_file.name.rsplit(".", 1)[-1].lower() if "." in uploaded_file.name else "png"
+    filename = f"content_blocks/{uuid.uuid4().hex}.{extension}"
+    saved_path = default_storage.save(filename, uploaded_file)
+    file_url = default_storage.url(saved_path)
+    media_url = getattr(settings, "MEDIA_URL", "/media/")
+    if not file_url.startswith(("http://", "https://", "/")):
+        file_url = f"{media_url}{file_url}"
+
+    return JsonResponse({"success": True, "url": file_url})
+
+
 @login_required
 def guides_glossary(request):
-    terms = GlossaryTerm.objects.all().order_by('term')
-    context = {
-        'terms': terms,
-    }
-    return render(request, 'fencers/guides_glossary.html', context)
+    return _render_content_page(request, ContentPage.Section.WIKI, "glossary")
 
 
 @login_required
 def guides_videos(request):
-    videos = GuideVideo.objects.all().order_by('category', 'title')
-    context = {
-        'videos': videos,
-    }
-    return render(request, 'fencers/guides_videos.html', context)
+    return _render_content_page(request, ContentPage.Section.WIKI, "videos")
 
 
 @login_required
 def guides_rules(request):
-    rules = RulesDocument.objects.all()
-    context = {
-        'rules': rules,
-    }
-    return render(request, 'fencers/guides_rules.html', context)
+    return _render_content_page(request, ContentPage.Section.WIKI, "rules")
 
 
 @login_required
 def guides_equipment_assembly(request):
-    context = {}
-    return render(request, 'fencers/guides_equipment_assembly.html', context)
+    return _render_content_page(request, ContentPage.Section.WIKI, "equipment-assembly")
 
 
 @login_required
 def wiki(request):
-    return render(request, 'fencers/wiki.html', {})
+    context = {
+        "page_title": "Wiki",
+        "links": WIKI_SUBPAGE_LINKS,
+    }
+    return render(request, "fencers/wiki.html", context)
 
 
 @login_required
 def guides_tools(request):
-    return render(request, 'fencers/guides_tools.html', {})
+    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "tools")
 
 
 @login_required
 def guides_weapon_diagnosis(request):
-    return render(request, 'fencers/guides_weapon_diagnosis.html', {})
+    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "weapon-diagnosis")
 
 
 @login_required
 def guides_blade_assembly(request):
-    return render(request, 'fencers/guides_blade_assembly.html', {})
+    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "blade-assembly")
 
 
 @login_required
 def guides_equipment_maintenance(request):
-    return render(request, 'fencers/guides_equipment_maintenance.html', {})
+    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "equipment-maintenance")
 
 
 @login_required
@@ -1486,6 +1590,7 @@ def equipment(request):
         'loadout_slots_left': positions.get('left', []),
         'loadout_slots_right': positions.get('right', []),
         'loadout_slots_bottom': positions.get('bottom', []),
+        'equipment_links': EQUIPMENT_SUBPAGE_LINKS,
     }
     return render(request, 'fencers/equipment.html', context)
 

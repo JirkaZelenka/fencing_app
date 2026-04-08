@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page.title }} - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="mb-0">{{ page.title }}</h1>
+    {% if is_admin %}
+        <a href="{% url 'content_admin_list' %}" class="btn btn-outline-primary btn-sm">Správa obsahu</a>
+    {% endif %}
+</div>
+
+{% if page.intro %}
+    <div class="card mb-3">
+        <div class="card-body">
+            {{ page.intro|linebreaks }}
+        </div>
+    </div>
+{% endif %}
+
+<div class="row g-3">
+{% for block in blocks %}
+    <div class="{% if block.layout == 'half' %}col-12 col-md-6{% else %}col-12{% endif %}">
+        <div class="card h-100 mb-0">
+            <div class="card-body">
+                {% if block.block_type == 'heading' %}
+                    <h3 class="mb-1">{{ block.title|default:block.body }}</h3>
+                {% elif block.block_type == 'text' %}
+                    {% if block.title %}<h5>{{ block.title }}</h5>{% endif %}
+                    {{ block.body|safe }}
+                {% elif block.block_type == 'image' %}
+                    {% if block.title %}<h5>{{ block.title }}</h5>{% endif %}
+                    {% if block.image_url %}
+                        <img src="{{ block.image_url }}" alt="{{ block.image_alt }}" class="img-fluid rounded">
+                    {% endif %}
+                    {% if block.body %}
+                        <p class="mt-2 mb-0 text-muted">{{ block.body }}</p>
+                    {% endif %}
+                {% elif block.block_type == 'link' %}
+                    {% if block.title %}<h5>{{ block.title }}</h5>{% endif %}
+                    {% if block.link_url %}
+                        <a class="btn btn-outline-primary" href="{{ block.link_url }}" target="_blank" rel="noopener">
+                            {{ block.link_text|default:block.link_url }}
+                        </a>
+                    {% endif %}
+                    {% if block.body %}
+                        <p class="mt-2 mb-0">{{ block.body }}</p>
+                    {% endif %}
+                {% elif block.block_type == 'html' %}
+                    {% if block.title %}<h5>{{ block.title }}</h5>{% endif %}
+                    {{ block.body|safe }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <div class="col-12">
+        <div class="alert alert-info mb-0">
+            Stránka zatím nemá žádný obsah.
+        </div>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -9,44 +9,27 @@
 {% endblock %}
 
 {% block content %}
-<h1>Výbava</h1>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1>Výbava</h1>
+    {% if user.is_staff %}
+        <a href="{% url 'content_admin_list' %}" class="btn btn-outline-primary btn-sm">Správa obsahu</a>
+    {% endif %}
+</div>
 
 <div class="row mt-4">
     <!-- Left column: Guide tiles -->
     <div class="col-lg-3 mb-4">
         <div class="guide-tiles-grid-2x2 guide-tiles-grid-2x2--sidebar">
-            <a href="{% url 'guides_tools' %}" class="guide-tile card text-decoration-none">
-                <div class="card-body text-center">
-                    <div class="guide-icon mb-2">
-                        <i class="ti ti-tool"></i>
+            {% for route_name, label, icon in equipment_links %}
+                <a href="{% url route_name %}" class="guide-tile card text-decoration-none">
+                    <div class="card-body text-center">
+                        <div class="guide-icon mb-2">
+                            <i class="ti ti-{{ icon }}"></i>
+                        </div>
+                        <h6 class="card-title mb-0">{{ label }}</h6>
                     </div>
-                    <h6 class="card-title mb-0">Nářadí</h6>
-                </div>
-            </a>
-            <a href="{% url 'guides_weapon_diagnosis' %}" class="guide-tile card text-decoration-none">
-                <div class="card-body text-center">
-                    <div class="guide-icon mb-2">
-                        <i class="ti ti-stethoscope"></i>
-                    </div>
-                    <h6 class="card-title mb-0">Diagnostika zbraně</h6>
-                </div>
-            </a>
-            <a href="{% url 'guides_blade_assembly' %}" class="guide-tile card text-decoration-none">
-                <div class="card-body text-center">
-                    <div class="guide-icon mb-2">
-                        <i class="ti ti-sword"></i>
-                    </div>
-                    <h6 class="card-title mb-0">Sestavení čepele</h6>
-                </div>
-            </a>
-            <a href="{% url 'guides_equipment_maintenance' %}" class="guide-tile card text-decoration-none">
-                <div class="card-body text-center">
-                    <div class="guide-icon mb-2">
-                        <i class="ti ti-brush"></i>
-                    </div>
-                    <h6 class="card-title mb-0">Údržba vybavení</h6>
-                </div>
-            </a>
+                </a>
+            {% endfor %}
         </div>
     </div>
     

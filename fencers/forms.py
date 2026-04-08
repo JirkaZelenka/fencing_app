@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from .models import TrainingNote, CircuitTraining, EventReaction, FencerProfile
+from .models import TrainingNote, CircuitTraining, EventReaction, ContentPage, ContentBlock
 
 User = get_user_model()
 
@@ -95,4 +95,51 @@ class ProfileMatchingForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
+class ContentPageForm(forms.ModelForm):
+    class Meta:
+        model = ContentPage
+        fields = ["title", "intro", "is_published"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "intro": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+            "is_published": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
+class ContentBlockForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["block_type"].widget = forms.HiddenInput()
+        if not self.initial.get("block_type"):
+            self.initial["block_type"] = ContentBlock.BlockType.TEXT
+        self.fields["block_type"].initial = self.initial.get("block_type", ContentBlock.BlockType.TEXT)
+
+    class Meta:
+        model = ContentBlock
+        fields = [
+            "position",
+            "title",
+            "layout",
+            "block_type",
+            "body",
+            "image_url",
+            "image_alt",
+            "link_url",
+            "link_text",
+            "is_visible",
+        ]
+        widgets = {
+            "position": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "block_type": forms.HiddenInput(),
+            "layout": forms.Select(attrs={"class": "form-select"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "body": forms.Textarea(attrs={"class": "form-control", "rows": 6}),
+            "image_url": forms.URLInput(attrs={"class": "form-control"}),
+            "image_alt": forms.TextInput(attrs={"class": "form-control"}),
+            "link_url": forms.URLInput(attrs={"class": "form-control"}),
+            "link_text": forms.TextInput(attrs={"class": "form-control"}),
+            "is_visible": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
 

@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block title %}Upravit obsah - Šermířská aplikace{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="mb-0">Upravit: {{ page.title }}</h1>
+    <a href="{% url 'content_admin_list' %}" class="btn btn-outline-secondary btn-sm">Zpět</a>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Nastavení stránky</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Název</label>
+                {{ page_form.title }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Úvod</label>
+                {{ page_form.intro }}
+            </div>
+            <div class="form-check">
+                {{ page_form.is_published }}
+                <label class="form-check-label">Publikováno</label>
+            </div>
+        </div>
+    </div>
+
+    <div id="blocks-formset">
+    {{ formset.management_form }}
+    {% for form in formset %}
+        <div class="card mb-3 js-block-form">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Blok {{ forloop.counter }}</strong>
+                {% if form.instance.pk %}
+                    <small class="text-muted">ID {{ form.instance.pk }}</small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Pořadí</label>
+                        {{ form.position }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nadpis bloku</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Rozložení</label>
+                        {{ form.layout }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Text / HTML</label>
+                        <div class="btn-group btn-group-sm mb-2 js-rich-toolbar" role="group">
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="bold"><strong>B</strong></button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="italic"><em>I</em></button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="insertUnorderedList">UL</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="insertOrderedList">OL</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="outdent">Outdent</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="indent">Indent</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="createLink">Link</button>
+                            <input type="color" class="form-control form-control-color p-1 js-color-picker" value="#000000" title="Barva textu">
+                        </div>
+                        <div class="border rounded p-2 mb-2 js-rich-editor" contenteditable="true" style="min-height: 130px;"></div>
+                        {{ form.body }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Image URL</label>
+                        {{ form.image_url }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Image ALT</label>
+                        {{ form.image_alt }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Link URL</label>
+                        {{ form.link_url }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Text odkazu</label>
+                        {{ form.link_text }}
+                    </div>
+                    <div class="col-12 d-flex gap-4">
+                        <div class="form-check">
+                            {{ form.is_visible }}
+                            <label class="form-check-label">Viditelný</label>
+                        </div>
+                        <div class="form-check">
+                            {{ form.DELETE }}
+                            <label class="form-check-label">Smazat</label>
+                        </div>
+                    </div>
+                </div>
+                {% if form.errors %}
+                    <div class="alert alert-danger mt-3 mb-0">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+    <template id="empty-block-form-template">
+        <div class="card mb-3 js-block-form">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Nový blok</strong>
+            </div>
+            <div class="card-body">
+                {% with form=formset.empty_form %}
+                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Pořadí</label>
+                        {{ form.position }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nadpis bloku</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Rozložení</label>
+                        {{ form.layout }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Text / HTML</label>
+                        <div class="btn-group btn-group-sm mb-2 js-rich-toolbar" role="group">
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="bold"><strong>B</strong></button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="italic"><em>I</em></button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="insertUnorderedList">UL</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="insertOrderedList">OL</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="outdent">Outdent</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="indent">Indent</button>
+                            <button type="button" class="btn btn-outline-secondary" data-cmd="createLink">Link</button>
+                            <input type="color" class="form-control form-control-color p-1 js-color-picker" value="#000000" title="Barva textu">
+                        </div>
+                        <div class="border rounded p-2 mb-2 js-rich-editor" contenteditable="true" style="min-height: 130px;"></div>
+                        {{ form.body }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Image URL</label>
+                        {{ form.image_url }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Image ALT</label>
+                        {{ form.image_alt }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Link URL</label>
+                        {{ form.link_url }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Text odkazu</label>
+                        {{ form.link_text }}
+                    </div>
+                    <div class="col-12 d-flex gap-4">
+                        <div class="form-check">
+                            {{ form.is_visible }}
+                            <label class="form-check-label">Viditelný</label>
+                        </div>
+                        <div class="form-check">
+                            {{ form.DELETE }}
+                            <label class="form-check-label">Smazat</label>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+    </template>
+
+    <div class="d-flex gap-2">
+        <button id="add-block-btn" type="button" class="btn btn-outline-primary">+ Přidat blok</button>
+        <button type="submit" class="btn btn-primary">Uložit změny</button>
+        <a href="{% url 'content_admin_list' %}" class="btn btn-light">Zrušit</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const formElement = document.querySelector('form[novalidate]');
+    const formsetContainer = document.getElementById('blocks-formset');
+    const totalFormsInput = document.getElementById('id_blocks-TOTAL_FORMS');
+    const addButton = document.getElementById('add-block-btn');
+    const template = document.getElementById('empty-block-form-template');
+    let hasUnsavedChanges = false;
+
+    function markDirty() {
+        hasUnsavedChanges = true;
+    }
+
+    function setCaretToEnd(el) {
+        el.focus();
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    async function uploadImage(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const response = await fetch('{% url "content_admin_upload_image" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: formData
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Upload failed');
+        }
+        return data.url;
+    }
+
+    function initRichEditor(blockCard) {
+        const textarea = blockCard.querySelector('textarea[name$="-body"]');
+        const editor = blockCard.querySelector('.js-rich-editor');
+        const toolbar = blockCard.querySelector('.js-rich-toolbar');
+        const colorPicker = blockCard.querySelector('.js-color-picker');
+        if (!textarea || !editor || !toolbar || editor.dataset.init === '1') return;
+
+        editor.innerHTML = textarea.value || '';
+        editor.dataset.init = '1';
+
+        function syncToTextarea() {
+            textarea.value = editor.innerHTML;
+            markDirty();
+        }
+
+        editor.addEventListener('input', syncToTextarea);
+        editor.addEventListener('blur', syncToTextarea);
+        editor.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                document.execCommand(event.shiftKey ? 'outdent' : 'indent', false, null);
+                syncToTextarea();
+            }
+        });
+
+        editor.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            editor.classList.add('bg-light');
+        });
+        editor.addEventListener('dragleave', () => editor.classList.remove('bg-light'));
+        editor.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            editor.classList.remove('bg-light');
+            const files = Array.from(event.dataTransfer?.files || []);
+            const imageFile = files.find((f) => (f.type || '').startsWith('image/'));
+            if (!imageFile) return;
+            try {
+                const url = await uploadImage(imageFile);
+                setCaretToEnd(editor);
+                document.execCommand('insertImage', false, url);
+                syncToTextarea();
+            } catch (error) {
+                window.alert('Nahrání obrázku selhalo.');
+            }
+        });
+
+        toolbar.querySelectorAll('button[data-cmd]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const cmd = btn.dataset.cmd;
+                if (cmd === 'createLink') {
+                    const url = window.prompt('Vlož URL odkazu');
+                    if (url) {
+                        document.execCommand('createLink', false, url);
+                    }
+                } else {
+                    document.execCommand(cmd, false, null);
+                }
+                editor.focus();
+                syncToTextarea();
+            });
+        });
+
+        colorPicker.addEventListener('input', () => {
+            document.execCommand('foreColor', false, colorPicker.value);
+            editor.focus();
+            syncToTextarea();
+        });
+    }
+
+    function initAllRichEditors() {
+        formsetContainer.querySelectorAll('.js-block-form').forEach(initRichEditor);
+    }
+
+    addButton.addEventListener('click', function () {
+        const formCount = Number(totalFormsInput.value);
+        const raw = template.innerHTML.replace(/__prefix__/g, String(formCount));
+        formsetContainer.insertAdjacentHTML('beforeend', raw);
+        totalFormsInput.value = String(formCount + 1);
+        markDirty();
+        const forms = formsetContainer.querySelectorAll('.js-block-form');
+        const lastForm = forms[forms.length - 1];
+        initRichEditor(lastForm);
+    });
+
+    formElement.addEventListener('input', markDirty);
+    formElement.addEventListener('submit', () => { hasUnsavedChanges = false; });
+    window.addEventListener('beforeunload', function (event) {
+        if (!hasUnsavedChanges) return;
+        event.preventDefault();
+        event.returnValue = '';
+    });
+    document.querySelectorAll('a[href]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            if (!hasUnsavedChanges) return;
+            if (!window.confirm('Máte neuložené změny. Opravdu chcete odejít?')) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    initAllRichEditors();
+});
+</script>
+{% endblock %}

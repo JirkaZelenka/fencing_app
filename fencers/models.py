@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
-from django.urls import reverse
 
 
 class UserManager(BaseUserManager):
@@ -479,4 +478,69 @@ class NewsRead(models.Model):
     
     def __str__(self):
         return f"{self.fencer} read {self.news.title}"
+
+
+class ContentPage(models.Model):
+    class Section(models.TextChoices):
+        WIKI = "wiki", "Wiki"
+        EQUIPMENT = "equipment", "Výbava"
+
+    section = models.CharField(max_length=20, choices=Section.choices, verbose_name="Sekce")
+    slug = models.SlugField(max_length=120, verbose_name="Slug")
+    title = models.CharField(max_length=200, verbose_name="Název stránky")
+    intro = models.TextField(blank=True, verbose_name="Úvod")
+    is_published = models.BooleanField(default=True, verbose_name="Publikováno")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Upraveno")
+
+    class Meta:
+        verbose_name = "Obsahová stránka"
+        verbose_name_plural = "Obsahové stránky"
+        ordering = ["section", "title"]
+        unique_together = ["section", "slug"]
+
+    def __str__(self):
+        return f"{self.get_section_display()} / {self.title}"
+
+
+class ContentBlock(models.Model):
+    class Layout(models.TextChoices):
+        FULL = "full", "Celá šířka"
+        HALF = "half", "1/2 šířky"
+
+    class BlockType(models.TextChoices):
+        HEADING = "heading", "Nadpis"
+        TEXT = "text", "Text"
+        IMAGE = "image", "Obrázek"
+        LINK = "link", "Odkaz / článek"
+        HTML = "html", "Vlastní HTML"
+
+    page = models.ForeignKey(
+        ContentPage,
+        on_delete=models.CASCADE,
+        related_name="blocks",
+        verbose_name="Stránka",
+    )
+    block_type = models.CharField(max_length=20, choices=BlockType.choices, verbose_name="Typ bloku")
+    layout = models.CharField(
+        max_length=10,
+        choices=Layout.choices,
+        default=Layout.FULL,
+        verbose_name="Rozložení",
+    )
+    position = models.PositiveIntegerField(default=0, verbose_name="Pořadí")
+    title = models.CharField(max_length=200, blank=True, verbose_name="Nadpis bloku")
+    body = models.TextField(blank=True, verbose_name="Text / HTML")
+    image_url = models.URLField(blank=True, verbose_name="URL obrázku")
+    image_alt = models.CharField(max_length=200, blank=True, verbose_name="ALT obrázku")
+    link_url = models.URLField(blank=True, verbose_name="URL odkazu")
+    link_text = models.CharField(max_length=200, blank=True, verbose_name="Text odkazu")
+    is_visible = models.BooleanField(default=True, verbose_name="Viditelný")
+
+    class Meta:
+        verbose_name = "Obsahový blok"
+        verbose_name_plural = "Obsahové bloky"
+        ordering = ["position", "id"]
+
+    def __str__(self):
+        return f"{self.page.title} / {self.get_block_type_display()} ({self.position})"
 

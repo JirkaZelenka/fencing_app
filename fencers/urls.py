@@ -81,6 +81,9 @@ urlpatterns = [
     path('guides/equipment-maintenance/', views.guides_equipment_maintenance, name='guides_equipment_maintenance'),
     path('wiki/', views.wiki, name='wiki'),
     path('equipment/', views.equipment, name='equipment'),
+    path('content-admin/pages/', views.content_admin_list, name='content_admin_list'),
+    path('content-admin/pages/<int:page_id>/', views.content_admin_edit, name='content_admin_edit'),
+    path('content-admin/upload-image/', views.content_admin_upload_image, name='content_admin_upload_image'),
     
     # News endpoints
     path('news/list/', views.news_list, name='news_list'),

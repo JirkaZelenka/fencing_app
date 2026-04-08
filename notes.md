@@ -45,3 +45,11 @@ a přidat pohár/medaile pro ty, co nedávno něco vyhráli !
 -> přidat někam legendu
 
 - možnost si uploadnout profilovku
+
+- můžu textové oblasti, tzn Wiki a výbava, upravit tak, aby Admin mohl snadno editovat stránku, vkládat texty, sekce, a obrázky? nebo musím pokaždé nahodit cursor a modlit se?
+
+- bug: ve statistikách se ukazuje opět user name místo Fencer name
+
+- bug: proklik na nákup výbavy se stackuje za URL
+
+- kde všude notifikační blikání? nový požadavek platby, Novinka, Kalendář?

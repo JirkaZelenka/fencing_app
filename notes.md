@@ -5,6 +5,7 @@ DONE: přepsat do skills
 - badges pro uživatele -> využiji i v HpoP
 - základy angličtiny, switch
 - articles + text managment, velmi solidní !!
+- uploading profile photo
 
 Important info:
 Added. You now have a translation sync command:
@@ -32,8 +33,6 @@ Badges: co přidat ještě "pokročilý", aby každý byl něco?
 a R a A "Král a Královna" - korunku?
 a přidat pohár/medaile pro ty, co nedávno něco vyhráli !
 -> přidat někam legendu
-
-- možnost si uploadnout profilovku
 
 - bug: ve statistikách se ukazuje opět user name místo Fencer name
 

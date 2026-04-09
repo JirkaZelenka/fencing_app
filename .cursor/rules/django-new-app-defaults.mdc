@@ -1,0 +1,36 @@
+---
+description: New Django apps default to SQLite, top nav, light/dark theme, blue–purple palette
+alwaysApply: true
+---
+
+# New Django app defaults
+
+Unless the user explicitly chooses something else when spinning up or extending a Django app:
+
+1. **Database** — Use **SQLite** (`django.db.backends.sqlite3`, e.g. `BASE_DIR / 'db.sqlite3'`). Switch to PostgreSQL/MySQL/etc. only when they ask.
+2. **Layout** — Use a **top header** for the main menu (horizontal nav), not a sidebar as the primary navigation pattern.
+3. **Theme** — Support **light and dark** modes: respect `prefers-color-scheme`, and add a **user toggle** that persists (e.g. `localStorage` + a class on `<html>`) when it fits the stack.
+4. **Color palette** — Prefer **blue through purple** accents (e.g. indigo → violet), including hovers, links, buttons, and focus rings. Keep neutrals for surfaces and text contrast in both themes.
+
+## CSS hint (theme + palette)
+
+```css
+:root {
+  --accent-from: #2563eb;
+  --accent-to: #7c3aed;
+  --bg: #f8fafc;
+  --text: #0f172a;
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --text: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f172a;
+    --text: #f1f5f9;
+  }
+}
+```
+
+Combine a `data-theme` toggle with `prefers-color-scheme` when there is no explicit light choice. Use these as defaults for new templates and static CSS unless the user specifies otherwise.

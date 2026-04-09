@@ -1,0 +1,33 @@
+---
+description: Do not delete databases, user data, or media without explicit user approval
+alwaysApply: true
+---
+
+# Preserve data and content
+
+- Do **not** delete or wipe the database, example or seed data, user accounts, or stored texts and media unless the user explicitly asks for that removal.
+- When refactoring or changing app structure, prefer **additive** or **non-destructive** changes (new migrations that alter in place, deprecate with fallbacks, archive copies) over dropping tables, bulk-deleting records, or removing files from the repo or storage.
+- If a change would require destructive steps (e.g. `RunPython` that deletes rows, `RemoveField` without a data migration plan, deleting `db.sqlite3`, clearing fixtures), **stop and ask the user** how they want to proceed.
+
+## Examples
+
+```python
+# ❌ BAD — destructive without confirmation
+# migrations/00xx_wipe_old_posts.py
+def forwards(apps, schema_editor):
+    Post.objects.all().delete()
+```
+
+```python
+# ✅ GOOD — ask first, or use a reversible / nullable path
+# Add nullable field, backfill in a separate step the user approves
+```
+
+```text
+# ❌ BAD — deleting production or local DB in instructions or scripts
+rm db.sqlite3
+```
+
+```text
+# ✅ GOOD — document migration path; let the user run destructive commands themselves if they choose
+```

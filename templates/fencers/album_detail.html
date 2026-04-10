@@ -73,11 +73,12 @@
             {% if subalbums %}
             <div>
                 <h6>Nahrát fotky do subalba</h6>
+                {% if r2_enabled %}
                 {% for subalbum in subalbums %}
                 <div class="card mb-2">
                     <div class="card-body">
                         <h6 class="card-title">{{ subalbum.name }}</h6>
-                        <form method="post" action="{% url 'upload_photo' subalbum.id %}" enctype="multipart/form-data">
+                        <form method="post" action="{% url 'upload_photo_r2' subalbum.id %}" enctype="multipart/form-data">
                             {% csrf_token %}
                             <div class="row">
                                 <div class="col-md-4 mb-2">
@@ -98,6 +99,9 @@
                     </div>
                 </div>
                 {% endfor %}
+                {% else %}
+                <p class="text-muted mb-0">Nahrávání není k dispozici (úložiště není nakonfigurováno).</p>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -114,15 +118,15 @@
         <div class="col-6 col-md-4 col-lg-3 mb-4">
             <div class="card">
                 <div class="position-relative">
-                    <img src="{{ photo.photo.url }}" 
+                    <img src="{{ photo.display_image_url }}" 
                          class="card-img-top photo-thumbnail" 
                          alt="{% if photo.title %}{{ photo.title }}{% else %}Photo{% endif %}" 
                          data-photo-index="{{ forloop.counter0 }}"
-                         data-photo-url="{{ photo.photo.url }}"
+                         data-photo-url="{{ photo.display_image_url }}"
                          data-photo-title="{{ photo.title|default:'' }}"
                          data-photo-description="{{ photo.description|default:'' }}"
                          data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
-                         data-photo-uploader="{% if photo.uploaded_by.user %}{{ photo.uploaded_by.user.get_full_name|default:photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}"
+                         data-photo-uploader="{% if photo.uploaded_by %}{% if photo.uploaded_by.get_full_name %}{{ photo.uploaded_by.get_full_name }}{% elif photo.uploaded_by.user %}{{ photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}{% endif %}"
                          style="height: 200px; object-fit: cover; cursor: pointer;">
                     {% with like_list=photo.likes.all %}
                     <div class="photo-like-wrapper position-absolute top-0 end-0 m-2" style="z-index: 10;">
@@ -138,8 +142,10 @@
                             <div class="photo-like-tooltip-content">
                                 {% for like in like_list|slice:":5" %}
                                     {% if like.fencer %}
-                                        {% if like.fencer.user %}
-                                        <div class="photo-like-user">{{ like.fencer.user.get_full_name|default:like.fencer.user.username }}</div>
+                                        {% if like.fencer.get_full_name %}
+                                        <div class="photo-like-user">{{ like.fencer.get_full_name }}</div>
+                                        {% elif like.fencer.user %}
+                                        <div class="photo-like-user">{{ like.fencer.user.username }}</div>
                                         {% else %}
                                         <div class="photo-like-user">{{ like.fencer.first_name }} {{ like.fencer.last_name }}</div>
                                         {% endif %}
@@ -172,7 +178,9 @@
                     </div>
                     <div class="mt-1">
                         <small class="text-muted">
-                            {% if photo.uploaded_by.user %}{{ photo.uploaded_by.user.get_full_name|default:photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}
+                            {% if photo.uploaded_by %}
+                                {% if photo.uploaded_by.get_full_name %}{{ photo.uploaded_by.get_full_name }}{% elif photo.uploaded_by.user %}{{ photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}
+                            {% endif %}
                         </small>
                     </div>
                 </div>
@@ -224,19 +232,19 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ subalbum.name }}</h5>
-                        <small class="text-muted">Vytvořil: {% if subalbum.created_by.user %}{{ subalbum.created_by.user.get_full_name|default:subalbum.created_by.user.username }}{% else %}{{ subalbum.created_by.first_name }} {{ subalbum.created_by.last_name }}{% endif %}</small>
+                        <small class="text-muted">Vytvořil: {% if subalbum.created_by %}{% if subalbum.created_by.get_full_name %}{{ subalbum.created_by.get_full_name }}{% elif subalbum.created_by.user %}{{ subalbum.created_by.user.username }}{% else %}{{ subalbum.created_by.first_name }} {{ subalbum.created_by.last_name }}{% endif %}{% endif %}</small>
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            {% for photo in subalbum.photos.all|slice:":6" %}
+                            {% for ep in subalbum.photos.all|slice:":6" %}
                             <div class="col-4 mb-2">
-                                <a href="{{ photo.photo.url }}" target="_blank">
-                                    <img src="{{ photo.photo.url }}" class="img-fluid rounded" alt="{{ photo.title }}" style="width: 100%; height: 100px; object-fit: cover;">
+                                <a href="{{ ep.display_image_url }}" target="_blank">
+                                    <img src="{{ ep.display_image_url }}" class="img-fluid rounded" alt="" style="width: 100%; height: 100px; object-fit: cover;">
                                 </a>
                             </div>
                             {% empty %}
                             <div class="col-12">
-                                <p class="text-muted mb-0">Zatím žádné fotky</p>
+                                <p class="text-muted mb-0">Zatím žádné nahrané fotky</p>
                             </div>
                             {% endfor %}
                             {% if subalbum.photos.count > 6 %}

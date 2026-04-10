@@ -66,6 +66,7 @@ urlpatterns = [
     path('photos/album/<int:album_id>/cover/', views.update_album_cover, name='update_album_cover'),
     path('photos/album/<int:album_id>/subalbum/create/', views.create_subalbum, name='create_subalbum'),
     path('photos/subalbum/<int:subalbum_id>/upload/', views.upload_photo, name='upload_photo'),
+    path('photos/subalbum/<int:subalbum_id>/upload-r2/', views.upload_photo_r2, name='upload_photo_r2'),
     path('photos/photo/<int:photo_id>/like/', views.toggle_photo_like, name='toggle_photo_like'),
     path('calendar/', views.calendar_events, name='calendar_events'),
     path('calendar/<int:event_id>/reaction/', views.event_reaction, name='event_reaction'),

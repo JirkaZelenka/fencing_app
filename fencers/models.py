@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
@@ -210,7 +211,6 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def clean(self):
-        from django.core.exceptions import ValidationError
         # Require participants_count for tournament and humanitarian events
         if self.event_type in [self.EventType.TOURNAMENT, self.EventType.HUMANITARIAN]:
             if not self.participants_count or self.participants_count <= 0:
@@ -320,6 +320,12 @@ class SubAlbum(models.Model):
         verbose_name = "Subalbum"
         verbose_name_plural = "Subalba"
         ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['album', 'name'],
+                name='fencers_subalbum_album_name_uniq',
+            ),
+        ]
     
     def __str__(self):
         return f"{self.name} ({self.album.event.title})"
@@ -328,7 +334,18 @@ class SubAlbum(models.Model):
 class EventPhoto(models.Model):
     title = models.CharField(max_length=200, verbose_name="Název")
     description = models.TextField(blank=True, verbose_name="Popis")
-    photo = models.ImageField(upload_to='event_photos/', verbose_name="Fotka")
+    photo = models.ImageField(
+        upload_to='event_photos/',
+        null=True,
+        blank=True,
+        verbose_name="Fotka",
+    )
+    remote_image_url = models.URLField(
+        max_length=1024,
+        blank=True,
+        default='',
+        verbose_name="URL obrázku (vzdálené úložiště)",
+    )
     event_date = models.DateField(null=True, blank=True, verbose_name="Datum akce")
     uploaded_by = models.ForeignKey(FencerProfile, on_delete=models.SET_NULL, null=True, verbose_name="Nahrál")
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -339,7 +356,21 @@ class EventPhoto(models.Model):
         verbose_name = "Fotka z akce"
         verbose_name_plural = "Fotky z akcí"
         ordering = ['-event_date', '-uploaded_at']
-    
+
+    def clean(self):
+        super().clean()
+        if not self.photo and not (self.remote_image_url or '').strip():
+            raise ValidationError('Je potřeba mít buď nahraný soubor, nebo URL obrázku.')
+
+    @property
+    def display_image_url(self):
+        url = (self.remote_image_url or '').strip()
+        if url:
+            return url
+        if self.photo:
+            return self.photo.url
+        return ''
+
     def get_like_count(self):
         """Get the number of likes for this photo"""
         return self.likes.count()

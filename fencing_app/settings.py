@@ -4,6 +4,7 @@ Django settings for fencing_app project.
 
 from pathlib import Path
 import os
+import importlib.util
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'fencers.apps.FencersConfig',  # Use explicit app config
 ]
+if importlib.util.find_spec("storages"):
+    INSTALLED_APPS.append("storages")
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -98,6 +101,14 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 # Media files (user uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Cloudflare R2 (opt-in, parallel to local /media storage)
+R2_ENABLED = config('R2_ENABLED', default=False, cast=bool)
+R2_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
+R2_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
+R2_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
+R2_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='')
+R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

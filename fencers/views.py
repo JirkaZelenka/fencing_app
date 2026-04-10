@@ -43,6 +43,12 @@ from .forms import (
     ContentBlockForm,
 )
 from .i18n import tr
+from .r2_storage import (
+    r2_ready,
+    build_event_photo_key,
+    build_object_url,
+    upload_image_to_r2,
+)
 
 # Profile self-match: failed birth-year check blocks retries for this many minutes.
 PROFILE_JOIN_BLOCK_SECONDS = 120
@@ -927,7 +933,7 @@ def album_detail(request, album_id):
     if not profile:
         return redirect("match_profile")
     album = get_object_or_404(PhotoAlbum.objects.select_related("event"), id=album_id)
-    subalbums = album.subalbums.all().prefetch_related('photos').order_by('-created_at')
+    subalbums = list(album.subalbums.all().prefetch_related('photos').order_by('-created_at'))
     
     # Get all photos from all subalbums for browsing
     all_photos = EventPhoto.objects.filter(subalbum__album=album).select_related(
@@ -947,6 +953,7 @@ def album_detail(request, album_id):
         'subalbums': subalbums,
         'all_photos': all_photos,
         'user_liked_photo_ids': user_liked_photo_ids,
+        'r2_enabled': r2_ready(),
     }
     return render(request, 'fencers/album_detail.html', context)
 
@@ -964,7 +971,11 @@ def create_subalbum(request, album_id):
     if not name:
         messages.error(request, 'Název subalba je povinný.')
         return redirect('album_detail', album_id=album_id)
-    
+
+    if SubAlbum.objects.filter(album=album, name=name).exists():
+        messages.error(request, 'Subalbum s tímto názvem v tomto albu už existuje.')
+        return redirect('album_detail', album_id=album_id)
+
     subalbum = SubAlbum.objects.create(
         album=album,
         name=name,
@@ -977,36 +988,70 @@ def create_subalbum(request, album_id):
 @login_required
 @require_POST
 def upload_photo(request, subalbum_id):
+    # Keep old endpoint as compatibility alias, but use the R2-backed flow.
+    return upload_photo_r2(request, subalbum_id)
+
+
+@login_required
+@require_POST
+def upload_photo_r2(request, subalbum_id):
     profile = getattr(request.user, 'fencer_profile', None)
     if not profile:
         messages.info(request, 'Nejprve se prosím přiřaďte k profilu.')
         return redirect('match_profile')
-    subalbum = get_object_or_404(SubAlbum.objects.select_related('album'), id=subalbum_id)
-    
+    subalbum = get_object_or_404(SubAlbum.objects.select_related('album', 'album__event'), id=subalbum_id)
+    if not r2_ready():
+        messages.error(request, 'Úložiště není nakonfigurováno. Doplňte proměnné v .env.')
+        return redirect('album_detail', album_id=subalbum.album.id)
+
     photo_files = request.FILES.getlist('photo')
     if not photo_files:
         messages.error(request, 'Musíte vybrat alespoň jednu fotku.')
         return redirect('album_detail', album_id=subalbum.album.id)
-    
-    title = request.POST.get('title', '').strip()
+
+    title_base = request.POST.get('title', '').strip()
     description = request.POST.get('description', '').strip()
-    
     uploaded_count = 0
     for photo_file in photo_files:
-        EventPhoto.objects.create(
-            title=title,
-            description=description,
-            photo=photo_file,
-            event_date=subalbum.album.event.date,
-            uploaded_by=profile,
-            subalbum=subalbum
+        content_type = (getattr(photo_file, 'content_type', '') or '').strip().lower()
+        if not content_type.startswith('image/'):
+            continue
+        object_key = build_event_photo_key(
+            event=subalbum.album.event,
+            subalbum=subalbum,
+            owner_profile=subalbum.created_by,
+            original_name=photo_file.name,
         )
-        uploaded_count += 1
-    
+        try:
+            upload_image_to_r2(
+                file_obj=photo_file,
+                object_key=object_key,
+                content_type=content_type,
+            )
+            public_url = build_object_url(object_key)
+            stem, _ext = os.path.splitext(photo_file.name)
+            row_title = (title_base or stem)[:200]
+            EventPhoto.objects.create(
+                title=row_title,
+                description=description,
+                remote_image_url=public_url,
+                event_date=subalbum.album.event.date,
+                uploaded_by=profile,
+                subalbum=subalbum,
+            )
+            uploaded_count += 1
+        except Exception:
+            messages.error(
+                request,
+                f'Nepodařilo se nahrát soubor "{photo_file.name}" do R2.',
+            )
+
     if uploaded_count == 1:
-        messages.success(request, 'Fotka byla nahrána.')
-    else:
+        messages.success(request, '1 fotka byla nahrána.')
+    elif uploaded_count > 1:
         messages.success(request, f'{uploaded_count} fotek bylo nahráno.')
+    else:
+        messages.warning(request, 'Žádná fotka nebyla nahrána do R2.')
     return redirect('album_detail', album_id=subalbum.album.id)
 
 

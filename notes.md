@@ -42,5 +42,3 @@ a přidat pohár/medaile pro ty, co nedávno něco vyhráli !
 - bug: proklik na nákup výbavy se stackuje za URL
 
 - kde všude notifikační blikání? nový požadavek platby, Novinka, Kalendář?
-
-- do WIKI přidat historii klubu, a historii šermu, a možná i nějaké pikantnosti, seznamy filmů o šermu, atp

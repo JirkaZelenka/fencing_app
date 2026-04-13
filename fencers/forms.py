@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import TrainingNote, CircuitTraining, EventReaction, ContentPage, ContentBlock
@@ -100,12 +101,83 @@ class ProfileMatchingForm(forms.Form):
 class ContentPageForm(forms.ModelForm):
     class Meta:
         model = ContentPage
-        fields = ["title", "intro", "is_published"]
+        fields = [
+            "section",
+            "slug",
+            "title",
+            "intro",
+            "is_published",
+            "show_in_nav",
+            "nav_order",
+            "nav_icon",
+        ]
         widgets = {
+            "section": forms.Select(attrs={"class": "form-select"}),
+            "slug": forms.TextInput(attrs={"class": "form-control"}),
             "title": forms.TextInput(attrs={"class": "form-control"}),
             "intro": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
             "is_published": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_in_nav": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "nav_order": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "nav_icon": forms.TextInput(attrs={"class": "form-control"}),
         }
+
+    def clean_slug(self):
+        slug = (self.cleaned_data.get("slug") or "").strip().lower()
+        if not slug:
+            raise ValidationError("Slug je povinný.")
+        return slug
+
+    def clean(self):
+        cleaned = super().clean()
+        section = cleaned.get("section")
+        slug = cleaned.get("slug")
+        if section and slug:
+            qs = ContentPage.objects.filter(section=section, slug=slug)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError("Stránka s tímto slugem v této sekci už existuje.")
+        return cleaned
+
+
+class ContentPageCreateForm(forms.ModelForm):
+    class Meta:
+        model = ContentPage
+        fields = [
+            "section",
+            "slug",
+            "title",
+            "intro",
+            "is_published",
+            "show_in_nav",
+            "nav_order",
+            "nav_icon",
+        ]
+        widgets = {
+            "section": forms.Select(attrs={"class": "form-select"}),
+            "slug": forms.TextInput(attrs={"class": "form-control"}),
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "intro": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "is_published": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "show_in_nav": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "nav_order": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "nav_icon": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean_slug(self):
+        slug = (self.cleaned_data.get("slug") or "").strip().lower()
+        if not slug:
+            raise ValidationError("Slug je povinný.")
+        return slug
+
+    def clean(self):
+        cleaned = super().clean()
+        section = cleaned.get("section")
+        slug = cleaned.get("slug")
+        if section and slug and ContentPage.objects.filter(section=section, slug=slug).exists():
+            raise ValidationError("Stránka s tímto slugem v této sekci už existuje.")
+        return cleaned
 
 
 class ContentBlockForm(forms.ModelForm):

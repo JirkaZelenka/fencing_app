@@ -15,17 +15,56 @@
             <h5 class="mb-0">Nastavení stránky</h5>
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label">Název</label>
-                {{ page_form.title }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Úvod</label>
-                {{ page_form.intro }}
-            </div>
-            <div class="form-check">
-                {{ page_form.is_published }}
-                <label class="form-check-label">Publikováno</label>
+            {% if page_form.non_field_errors %}
+                <div class="alert alert-danger">{{ page_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Sekce</label>
+                    {{ page_form.section }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Slug</label>
+                    {{ page_form.slug }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Veřejná URL</label>
+                    <div class="form-control-plaintext small">
+                        {% if page.section == 'wiki' %}
+                            <code>/wiki/{{ page.slug }}/</code>
+                        {% else %}
+                            <code>/equipment/{{ page.slug }}/</code>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Název</label>
+                    {{ page_form.title }}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Úvod</label>
+                    {{ page_form.intro }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Pořadí dlaždic</label>
+                    {{ page_form.nav_order }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ikona (Tabler, bez ti ti-)</label>
+                    {{ page_form.nav_icon }}
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ page_form.is_published }}
+                        <label class="form-check-label">Publikováno</label>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ page_form.show_in_nav }}
+                        <label class="form-check-label">Zobrazit dlaždici</label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

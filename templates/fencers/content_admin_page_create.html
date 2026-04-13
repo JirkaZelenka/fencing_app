@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Nová stránka - Správa obsahu{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="mb-0">Nová obsahová stránka</h1>
+    <a href="{% url 'content_admin_list' %}" class="btn btn-outline-secondary btn-sm">Zpět</a>
+</div>
+
+<p class="text-muted">Stránka se objeví jako dlaždice na Wiki nebo Výbava podle sekce a přepínače „Zobrazit dlaždici“. Slug určí adresu (např. <code>moje-tema</code> → <code>/wiki/moje-tema/</code>).</p>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="card">
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Sekce</label>
+                {{ form.section }}
+                {{ form.section.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Slug</label>
+                {{ form.slug }}
+                {{ form.slug.errors }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Pořadí dlaždic</label>
+                {{ form.nav_order }}
+            </div>
+            <div class="col-12">
+                <label class="form-label">Název</label>
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
+            <div class="col-12">
+                <label class="form-label">Úvod (volitelné)</label>
+                {{ form.intro }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ikona (Tabler, bez ti ti-)</label>
+                {{ form.nav_icon }}
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    {{ form.is_published }}
+                    <label class="form-check-label">Publikováno</label>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    {{ form.show_in_nav }}
+                    <label class="form-check-label">Zobrazit dlaždici</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Vytvořit a upravit obsah</button>
+        <a href="{% url 'content_admin_list' %}" class="btn btn-light">Zrušit</a>
+    </div>
+</form>
+{% endblock %}

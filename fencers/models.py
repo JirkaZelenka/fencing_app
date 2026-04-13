@@ -527,12 +527,28 @@ class ContentPage(models.Model):
     title = models.CharField(max_length=200, verbose_name="Název stránky")
     intro = models.TextField(blank=True, verbose_name="Úvod")
     is_published = models.BooleanField(default=True, verbose_name="Publikováno")
+    show_in_nav = models.BooleanField(
+        default=True,
+        verbose_name="Zobrazit dlaždici",
+        help_text="Pokud je zapnuto, stránka se objeví jako dlaždice na Wiki nebo Výbava.",
+    )
+    nav_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Pořadí dlaždic",
+        help_text="Nižší číslo = dříve v řádku dlaždic.",
+    )
+    nav_icon = models.CharField(
+        max_length=64,
+        default="file-text",
+        verbose_name="Ikona (Tabler)",
+        help_text='Bez prefixu "ti ti-", např. book-2, video, shopping-cart.',
+    )
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Upraveno")
 
     class Meta:
         verbose_name = "Obsahová stránka"
         verbose_name_plural = "Obsahové stránky"
-        ordering = ["section", "title"]
+        ordering = ["section", "nav_order", "title"]
         unique_together = ["section", "slug"]
 
     def __str__(self):

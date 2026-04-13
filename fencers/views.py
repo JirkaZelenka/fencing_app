@@ -40,6 +40,7 @@ from .forms import (
     EventReactionForm,
     RegistrationForm,
     ContentPageForm,
+    ContentPageCreateForm,
     ContentBlockForm,
 )
 from .i18n import tr
@@ -55,21 +56,7 @@ PROFILE_JOIN_BLOCK_SECONDS = 120
 _SESSION_PROFILE_JOIN_BLOCK_UNTIL = "profile_join_blocked_until_ts"
 _SESSION_MATCH_PENDING_PROFILE_ID = "match_pending_profile_id"
 
-WIKI_SUBPAGE_LINKS = [
-    ("guides_glossary", "Slovníček", "book-2"),
-    ("guides_videos", "Videonávody", "video"),
-    ("guides_rules", "Pravidla", "file-text"),
-    ("guides_equipment_assembly", "Technická část", "tool"),
-]
-
 staff_required = user_passes_test(lambda u: u.is_authenticated and u.is_staff)
-
-EQUIPMENT_SUBPAGE_LINKS = [
-    ("guides_tools", "Nářadí", "tool"),
-    ("guides_weapon_diagnosis", "Diagnostika zbraně", "stethoscope"),
-    ("guides_blade_assembly", "Sestavení čepele", "sword"),
-    ("guides_equipment_maintenance", "Údržba vybavení", "brush"),
-]
 
 
 def _profile_join_block_state(request):
@@ -1476,8 +1463,45 @@ def _render_content_page(request, section, slug):
 
 @staff_required
 def content_admin_list(request):
-    pages = ContentPage.objects.all().order_by("section", "title")
+    pages = ContentPage.objects.all().order_by("section", "nav_order", "title")
     return render(request, "fencers/content_admin_list.html", {"pages": pages})
+
+
+@staff_required
+@require_POST
+def content_admin_nav_update(request):
+    for page in ContentPage.objects.all():
+        order_key = f"nav_order_{page.id}"
+        nav_key = f"show_in_nav_{page.id}"
+        if order_key in request.POST:
+            try:
+                page.nav_order = max(0, int(request.POST.get(order_key, 0)))
+            except (TypeError, ValueError):
+                pass
+        page.show_in_nav = nav_key in request.POST
+        page.save(update_fields=["nav_order", "show_in_nav"])
+    messages.success(request, "Pořadí a zobrazení dlaždic bylo uloženo.")
+    return redirect("content_admin_list")
+
+
+@staff_required
+def content_admin_page_create(request):
+    if request.method == "POST":
+        form = ContentPageCreateForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Stránka byla vytvořena. Můžete doplnit obsah.")
+            return redirect("content_admin_edit", page_id=form.instance.id)
+    else:
+        form = ContentPageCreateForm(
+            initial={
+                "is_published": True,
+                "show_in_nav": True,
+                "nav_order": 100,
+                "nav_icon": "file-text",
+            }
+        )
+    return render(request, "fencers/content_admin_page_create.html", {"form": form})
 
 
 @staff_required
@@ -1542,51 +1566,65 @@ def content_admin_upload_image(request):
 
 @login_required
 def guides_glossary(request):
-    return _render_content_page(request, ContentPage.Section.WIKI, "glossary")
+    return redirect("wiki_subpage", slug="glossary", permanent=True)
 
 
 @login_required
 def guides_videos(request):
-    return _render_content_page(request, ContentPage.Section.WIKI, "videos")
+    return redirect("wiki_subpage", slug="videos", permanent=True)
 
 
 @login_required
 def guides_rules(request):
-    return _render_content_page(request, ContentPage.Section.WIKI, "rules")
+    return redirect("wiki_subpage", slug="rules", permanent=True)
 
 
 @login_required
 def guides_equipment_assembly(request):
-    return _render_content_page(request, ContentPage.Section.WIKI, "equipment-assembly")
+    return redirect("wiki_subpage", slug="equipment-assembly", permanent=True)
 
 
 @login_required
 def wiki(request):
+    nav_pages = ContentPage.objects.filter(
+        section=ContentPage.Section.WIKI,
+        show_in_nav=True,
+    ).order_by("nav_order", "title")
     context = {
         "page_title": "Wiki",
-        "links": WIKI_SUBPAGE_LINKS,
+        "nav_pages": nav_pages,
     }
     return render(request, "fencers/wiki.html", context)
 
 
 @login_required
+def wiki_subpage(request, slug):
+    return _render_content_page(request, ContentPage.Section.WIKI, slug)
+
+
+@login_required
 def guides_tools(request):
-    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "tools")
+    return redirect("equipment_subpage", slug="tools", permanent=True)
 
 
 @login_required
 def guides_weapon_diagnosis(request):
-    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "weapon-diagnosis")
+    return redirect("equipment_subpage", slug="weapon-diagnosis", permanent=True)
 
 
 @login_required
 def guides_blade_assembly(request):
-    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "blade-assembly")
+    return redirect("equipment_subpage", slug="blade-assembly", permanent=True)
 
 
 @login_required
 def guides_equipment_maintenance(request):
-    return _render_content_page(request, ContentPage.Section.EQUIPMENT, "equipment-maintenance")
+    return redirect("equipment_subpage", slug="equipment-maintenance", permanent=True)
+
+
+@login_required
+def equipment_subpage(request, slug):
+    return _render_content_page(request, ContentPage.Section.EQUIPMENT, slug)
 
 
 @login_required
@@ -1670,13 +1708,18 @@ def equipment(request):
             positions[pos] = []
         positions[pos].append(slot)
     
+    nav_pages = ContentPage.objects.filter(
+        section=ContentPage.Section.EQUIPMENT,
+        show_in_nav=True,
+    ).order_by("nav_order", "title")
+
     context = {
         'equipment_items': equipment_items,
         'loadout_slots_top': positions.get('top', []),
         'loadout_slots_left': positions.get('left', []),
         'loadout_slots_right': positions.get('right', []),
         'loadout_slots_bottom': positions.get('bottom', []),
-        'equipment_links': EQUIPMENT_SUBPAGE_LINKS,
+        'nav_pages': nav_pages,
     }
     return render(request, 'fencers/equipment.html', context)
 

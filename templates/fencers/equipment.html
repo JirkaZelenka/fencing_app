@@ -20,15 +20,17 @@
     <!-- Left column: Guide tiles -->
     <div class="col-lg-3 mb-4">
         <div class="guide-tiles-grid-2x2 guide-tiles-grid-2x2--sidebar">
-            {% for route_name, label, icon in equipment_links %}
-                <a href="{% url route_name %}" class="guide-tile card text-decoration-none">
+            {% for page in nav_pages %}
+                <a href="{% url 'equipment_subpage' page.slug %}" class="guide-tile card text-decoration-none">
                     <div class="card-body text-center">
                         <div class="guide-icon mb-2">
-                            <i class="ti ti-{{ icon }}"></i>
+                            <i class="ti ti-{{ page.nav_icon }}"></i>
                         </div>
-                        <h6 class="card-title mb-0">{{ label }}</h6>
+                        <h6 class="card-title mb-0">{{ page.title }}</h6>
                     </div>
                 </a>
+            {% empty %}
+                <p class="text-muted small mb-0">Žádné dlaždice.</p>
             {% endfor %}
         </div>
     </div>

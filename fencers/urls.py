@@ -81,8 +81,12 @@ urlpatterns = [
     path('guides/blade-assembly/', views.guides_blade_assembly, name='guides_blade_assembly'),
     path('guides/equipment-maintenance/', views.guides_equipment_maintenance, name='guides_equipment_maintenance'),
     path('wiki/', views.wiki, name='wiki'),
+    path('wiki/<slug:slug>/', views.wiki_subpage, name='wiki_subpage'),
     path('equipment/', views.equipment, name='equipment'),
+    path('equipment/<slug:slug>/', views.equipment_subpage, name='equipment_subpage'),
     path('content-admin/pages/', views.content_admin_list, name='content_admin_list'),
+    path('content-admin/pages/create/', views.content_admin_page_create, name='content_admin_page_create'),
+    path('content-admin/pages/nav-update/', views.content_admin_nav_update, name='content_admin_nav_update'),
     path('content-admin/pages/<int:page_id>/', views.content_admin_edit, name='content_admin_edit'),
     path('content-admin/upload-image/', views.content_admin_upload_image, name='content_admin_upload_image'),
     

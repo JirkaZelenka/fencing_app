@@ -19,15 +19,17 @@
 <div class="row mt-4 justify-content-center">
     <div class="col-lg-6 col-md-8">
         <div class="guide-tiles-grid-2x2">
-            {% for route_name, label, icon in links %}
-                <a href="{% url route_name %}" class="guide-tile card text-decoration-none">
+            {% for page in nav_pages %}
+                <a href="{% url 'wiki_subpage' page.slug %}" class="guide-tile card text-decoration-none">
                     <div class="card-body text-center">
                         <div class="guide-icon mb-2">
-                            <i class="ti ti-{{ icon }}"></i>
+                            <i class="ti ti-{{ page.nav_icon }}"></i>
                         </div>
-                        <h6 class="card-title mb-0">{{ label }}</h6>
+                        <h6 class="card-title mb-0">{{ page.title }}</h6>
                     </div>
                 </a>
+            {% empty %}
+                <p class="text-muted mb-0">Zatím žádné stránky v navigaci.</p>
             {% endfor %}
         </div>
     </div>

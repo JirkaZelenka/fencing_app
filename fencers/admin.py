@@ -218,7 +218,7 @@ class SubAlbumAdmin(admin.ModelAdmin):
 class EventPhotoAdmin(admin.ModelAdmin):
     list_display = ['title', 'event_date', 'uploaded_by', 'is_featured', 'subalbum']
     list_filter = ['is_featured', 'event_date', 'uploaded_at']
-    search_fields = ['title', 'description']
+    search_fields = ['title', 'description', 'tags_search']
 
 
 @admin.register(PhotoLike)

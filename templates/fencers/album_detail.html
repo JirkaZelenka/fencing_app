@@ -13,6 +13,23 @@
     <a href="{% url 'event_photos' %}" class="btn btn-outline-secondary">← Zpět na alba</a>
 </div>
 
+{% if person_search_active %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'find_person_photos' %}">
+            <select name="tags" id="personSearchTags" class="form-select mb-2" multiple size="12"
+                    aria-label="Vyberte štítky k vyhledání">
+                {% for opt in person_find_tag_options %}
+                <option value="{{ opt }}"{% if opt in person_search_selected_tags %} selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+            <p class="small text-muted mb-2">Kliknutím s CTRL vyber více možností</p>
+            <button type="submit" class="btn btn-primary">Hledat</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 {% if not is_special_album %}
 <!-- Cover Photo Section -->
 <div class="card mb-4">
@@ -81,15 +98,21 @@
                         <form method="post" action="{% url 'upload_photo_r2' subalbum.id %}" enctype="multipart/form-data">
                             {% csrf_token %}
                             <div class="row">
-                                <div class="col-md-4 mb-2">
+                                <div class="col-md-3 mb-2">
                                     <input type="file" class="form-control" name="photo" accept="image/*" multiple required>
                                     <small class="text-muted">Můžete vybrat více fotek najednou</small>
                                 </div>
-                                <div class="col-md-3 mb-2">
-                                    <input type="text" class="form-control" name="title" placeholder="Název (volitelné, použije se pro všechny)">
+                                <div class="col-md-2 mb-2">
+                                    <input type="text" class="form-control" name="title" placeholder="Název (volitelné, všem)">
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <textarea class="form-control" name="description" rows="1" placeholder="Popis (volitelný, všem)"></textarea>
                                 </div>
                                 <div class="col-md-3 mb-2">
-                                    <textarea class="form-control" name="description" rows="1" placeholder="Popis (volitelný, použije se pro všechny)"></textarea>
+                                    <div class="photo-tags-input-wrap position-relative">
+                                        <input type="text" class="form-control js-photo-tags-comma" name="tags" placeholder="Štítky (volitelné, čárkou)" autocomplete="off">
+                                        <small class="text-muted">Kdo je na fotce — návrhy ze seznamu šermířů</small>
+                                    </div>
                                 </div>
                                 <div class="col-md-2 mb-2">
                                     <button type="submit" class="btn btn-sm btn-primary w-100">Nahrát</button>
@@ -112,6 +135,7 @@
 <!-- Photos Gallery (Main View) -->
 <div class="mb-4">
     <h3>Fotky</h3>
+    {% if fencer_tag_options %}{{ fencer_tag_options|json_script:"photo-tag-suggestions-data" }}{% endif %}
     {% if all_photos %}
     <div class="row" id="photoGallery">
         {% for photo in all_photos %}
@@ -125,8 +149,10 @@
                          data-photo-url="{{ photo.display_image_url }}"
                          data-photo-title="{{ photo.title|default:'' }}"
                          data-photo-description="{{ photo.description|default:'' }}"
+                         data-photo-event-title="{% if photo.subalbum and photo.subalbum.album and photo.subalbum.album.event %}{{ photo.subalbum.album.event.title }}{% endif %}"
                          data-photo-subalbum="{% if photo.subalbum %}{{ photo.subalbum.name }}{% endif %}"
-                         data-photo-uploader="{% if photo.uploaded_by %}{% if photo.uploaded_by.get_full_name %}{{ photo.uploaded_by.get_full_name }}{% elif photo.uploaded_by.user %}{{ photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}{% endif %}"
+                         data-photo-uploader="{% if photo.uploaded_by %}{{ photo.uploaded_by.display_name }}{% endif %}"
+                         data-photo-tags-json="{{ photo.tags_json|escape }}"
                          style="height: 200px; object-fit: cover; cursor: pointer;">
                     {% with like_list=photo.likes.all %}
                     <div class="photo-like-wrapper position-absolute top-0 end-0 m-2" style="z-index: 10;">
@@ -142,13 +168,7 @@
                             <div class="photo-like-tooltip-content">
                                 {% for like in like_list|slice:":5" %}
                                     {% if like.fencer %}
-                                        {% if like.fencer.get_full_name %}
-                                        <div class="photo-like-user">{{ like.fencer.get_full_name }}</div>
-                                        {% elif like.fencer.user %}
-                                        <div class="photo-like-user">{{ like.fencer.user.username }}</div>
-                                        {% else %}
-                                        <div class="photo-like-user">{{ like.fencer.first_name }} {{ like.fencer.last_name }}</div>
-                                        {% endif %}
+                                        <div class="photo-like-user">{{ like.fencer.display_name }}</div>
                                     {% endif %}
                                 {% endfor %}
                                 {% if like_list|length > 5 %}
@@ -168,30 +188,46 @@
                     {% if photo.description %}
                         <p class="card-text small text-muted">{{ photo.description }}</p>
                     {% endif %}
-                    <div class="d-flex flex-wrap gap-1 align-items-center mb-2">
+                    <p class="small text-muted mb-1 text-truncate" title="{% if photo.subalbum and photo.subalbum.album and photo.subalbum.album.event %}{{ photo.subalbum.album.event.title }}{% endif %}{% if photo.subalbum %} · {{ photo.subalbum.name }}{% endif %}{% if photo.uploaded_by %} · {{ photo.uploaded_by.display_name }}{% endif %}">
                         {% if photo.subalbum and photo.subalbum.album and photo.subalbum.album.event %}
-                            <span class="badge bg-primary">{{ photo.subalbum.album.event.title }}</span>
+                            <span>{{ photo.subalbum.album.event.title }}</span>
                         {% endif %}
-                        {% if photo.subalbum %}
-                            <span class="badge bg-secondary">{{ photo.subalbum.name }}</span>
-                        {% endif %}
+                        {% if photo.subalbum %}<span class="mx-1">·</span><span>{{ photo.subalbum.name }}</span>{% endif %}
+                        {% if photo.uploaded_by %}<span class="mx-1">·</span><span>{{ photo.uploaded_by.display_name }}</span>{% endif %}
+                    </p>
+                    <div class="d-flex flex-wrap gap-1 align-items-center mb-1">
+                        {% for tag in photo.tags %}
+                            <span class="badge rounded-pill bg-info text-dark">{{ tag }}</span>
+                        {% endfor %}
                     </div>
-                    <div class="mt-1">
-                        <small class="text-muted">
-                            {% if photo.uploaded_by %}
-                                {% if photo.uploaded_by.get_full_name %}{{ photo.uploaded_by.get_full_name }}{% elif photo.uploaded_by.user %}{{ photo.uploaded_by.user.username }}{% else %}{{ photo.uploaded_by.first_name }} {{ photo.uploaded_by.last_name }}{% endif %}
-                            {% endif %}
-                        </small>
-                    </div>
+                    <form method="post" action="{% url 'update_photo_tags' photo.id %}" class="mt-1">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <div class="input-group input-group-sm">
+                            <div class="photo-tags-input-wrap flex-grow-1 position-relative">
+                                <input type="text" name="tags" class="form-control js-photo-tags-comma" value="{{ photo.tags|join:', ' }}"
+                                       placeholder="Štítky (čárkou)" autocomplete="off" aria-label="Štítky fotky">
+                            </div>
+                            <button class="btn btn-outline-secondary" type="submit">Uložit</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info">
-        Zatím žádné fotky. Vytvořte subalbum a nahrajte první fotky pomocí tlačítka "Přidat obsah" výše.
-    </div>
+        {% if person_search_active %}
+            {% if not person_search_selected_tags %}
+            <div class="alert alert-info mb-0">Vyberte jeden nebo více štítků výše a stiskněte Hledat.</div>
+            {% else %}
+            <div class="alert alert-info mb-0">Žádné fotky pro vybrané štítky: {{ person_search_selected_tags|join:", " }}.</div>
+            {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            Zatím žádné fotky. Vytvořte subalbum a nahrajte první fotky pomocí tlačítka "Přidat obsah" výše.
+        </div>
+        {% endif %}
     {% endif %}
 </div>
 
@@ -207,10 +243,8 @@
             <div class="photo-presentation-info">
                 <h4 id="presentationTitle"></h4>
                 <p id="presentationDescription" class="text-muted"></p>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span id="presentationSubalbum" class="badge bg-secondary"></span>
-                    <span id="presentationUploader" class="text-muted"></span>
-                </div>
+                <p id="presentationMetaLine" class="text-white-50 small mb-2"></p>
+                <div id="presentationTags" class="d-flex flex-wrap gap-1 justify-content-center mb-2"></div>
                 <div class="mt-2">
                     <small class="text-muted" id="photoCounter"></small>
                 </div>
@@ -232,7 +266,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ subalbum.name }}</h5>
-                        <small class="text-muted">Vytvořil: {% if subalbum.created_by %}{% if subalbum.created_by.get_full_name %}{{ subalbum.created_by.get_full_name }}{% elif subalbum.created_by.user %}{{ subalbum.created_by.user.username }}{% else %}{{ subalbum.created_by.first_name }} {{ subalbum.created_by.last_name }}{% endif %}{% endif %}</small>
+                        <small class="text-muted">Vytvořil: {% if subalbum.created_by %}{{ subalbum.created_by.display_name }}{% endif %}</small>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -430,6 +464,23 @@
         font-size: 11px;
         opacity: 0.8;
     }
+
+    .photo-tags-input-wrap {
+        position: relative;
+    }
+    .photo-tags-suggest-dropdown {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        margin-top: 2px;
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 1050;
+    }
+    .photo-tags-suggest-item:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
     
     @media (max-width: 768px) {
         .photo-presentation-nav {
@@ -459,14 +510,104 @@
 
 {% block extra_js %}
 <script>
+function escapeHtmlTagSuggest(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function setupCommaTagSuggestions(allSuggestions) {
+    if (!Array.isArray(allSuggestions) || !allSuggestions.length) return;
+
+    document.querySelectorAll('input.js-photo-tags-comma').forEach((input) => {
+        const wrap = input.closest('.photo-tags-input-wrap');
+        if (!wrap || wrap.querySelector('.photo-tags-suggest-dropdown')) return;
+
+        const box = document.createElement('div');
+        box.className = 'photo-tags-suggest-dropdown border rounded shadow-sm bg-body';
+        box.style.display = 'none';
+        wrap.appendChild(box);
+
+        let hideTimer = null;
+
+        function hideBox() {
+            box.style.display = 'none';
+            box.innerHTML = '';
+        }
+
+        function activeTokenBounds() {
+            const v = input.value;
+            let pos = input.selectionStart;
+            if (pos === null || pos === undefined) pos = v.length;
+            const leftPart = v.slice(0, pos);
+            const lastComma = leftPart.lastIndexOf(',');
+            let tokenStart = lastComma === -1 ? 0 : lastComma + 1;
+            while (tokenStart < v.length && v[tokenStart] === ' ') tokenStart += 1;
+            const segment = v.slice(tokenStart, pos).replace(/\s+$/, '');
+            return { v, pos, tokenStart, segment };
+        }
+
+        function filtered(segment) {
+            const sl = segment.toLowerCase();
+            let list = allSuggestions;
+            if (segment.length) {
+                list = allSuggestions.filter((s) => s.toLowerCase().includes(sl));
+            } else {
+                list = allSuggestions.slice(0, 35);
+            }
+            return list.slice(0, 40);
+        }
+
+        function render() {
+            clearTimeout(hideTimer);
+            const { v, pos, tokenStart, segment } = activeTokenBounds();
+            const opts = filtered(segment);
+            if (!opts.length) {
+                hideBox();
+                return;
+            }
+            box.innerHTML = opts.map((o) =>
+                '<button type="button" tabindex="-1" class="photo-tags-suggest-item w-100 text-start border-0 bg-transparent py-1 px-2 small">' +
+                escapeHtmlTagSuggest(o) + '</button>'
+            ).join('');
+            box.style.display = 'block';
+            box.querySelectorAll('.photo-tags-suggest-item').forEach((btn) => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const pick = (btn.textContent || '').trim();
+                    if (!pick) return;
+                    const b = activeTokenBounds();
+                    const newVal = b.v.slice(0, b.tokenStart) + pick + ', ' + b.v.slice(b.pos).replace(/^\s*/, '');
+                    input.value = newVal;
+                    const newPos = b.tokenStart + pick.length + 2;
+                    input.setSelectionRange(newPos, newPos);
+                    hideBox();
+                    input.focus();
+                });
+            });
+        }
+
+        input.addEventListener('input', render);
+        input.addEventListener('focus', render);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideBox();
+        });
+        input.addEventListener('blur', () => {
+            hideTimer = setTimeout(hideBox, 200);
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const photos = Array.from(document.querySelectorAll('.photo-thumbnail'));
     const presentation = document.getElementById('photoPresentation');
     const presentationImage = document.getElementById('presentationImage');
     const presentationTitle = document.getElementById('presentationTitle');
     const presentationDescription = document.getElementById('presentationDescription');
-    const presentationSubalbum = document.getElementById('presentationSubalbum');
-    const presentationUploader = document.getElementById('presentationUploader');
+    const presentationMetaLine = document.getElementById('presentationMetaLine');
+    const presentationTags = document.getElementById('presentationTags');
     const photoCounter = document.getElementById('photoCounter');
     const closeBtn = document.getElementById('closePresentation');
     const prevBtn = document.getElementById('prevPhoto');
@@ -493,8 +634,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const photoUrl = photo.getAttribute('data-photo-url');
         const photoTitle = photo.getAttribute('data-photo-title');
         const photoDescription = photo.getAttribute('data-photo-description');
-        const photoSubalbum = photo.getAttribute('data-photo-subalbum');
-        const photoUploader = photo.getAttribute('data-photo-uploader');
+        const photoEventTitle = photo.getAttribute('data-photo-event-title') || '';
+        const photoSubalbum = photo.getAttribute('data-photo-subalbum') || '';
+        const photoUploader = photo.getAttribute('data-photo-uploader') || '';
+        const tagsJson = photo.getAttribute('data-photo-tags-json') || '[]';
         
         presentationImage.src = photoUrl;
         presentationImage.alt = photoTitle || 'Fotka';
@@ -513,14 +656,34 @@ document.addEventListener('DOMContentLoaded', function() {
             presentationDescription.style.display = 'none';
         }
         
-        if (photoSubalbum) {
-            presentationSubalbum.textContent = photoSubalbum;
-            presentationSubalbum.style.display = 'inline-block';
+        const metaParts = [photoEventTitle, photoSubalbum, photoUploader].filter(Boolean);
+        if (metaParts.length) {
+            presentationMetaLine.textContent = metaParts.join(' · ');
+            presentationMetaLine.style.display = 'block';
         } else {
-            presentationSubalbum.style.display = 'none';
+            presentationMetaLine.textContent = '';
+            presentationMetaLine.style.display = 'none';
         }
-        
-        presentationUploader.textContent = photoUploader;
+
+        presentationTags.innerHTML = '';
+        let tagList = [];
+        try {
+            tagList = JSON.parse(tagsJson);
+        } catch (e) {
+            tagList = [];
+        }
+        if (Array.isArray(tagList) && tagList.length) {
+            tagList.forEach((t) => {
+                const span = document.createElement('span');
+                span.className = 'badge rounded-pill bg-info text-dark';
+                span.textContent = t;
+                presentationTags.appendChild(span);
+            });
+            presentationTags.style.display = 'flex';
+        } else {
+            presentationTags.style.display = 'none';
+        }
+
         photoCounter.textContent = `${currentPhotoIndex + 1} / ${photos.length}`;
     }
     
@@ -584,6 +747,14 @@ document.addEventListener('DOMContentLoaded', function() {
             showNext();
         }
     });
+
+    const tagDataEl = document.getElementById('photo-tag-suggestions-data');
+    if (tagDataEl) {
+        try {
+            const tagSuggestions = JSON.parse(tagDataEl.textContent);
+            setupCommaTagSuggestions(tagSuggestions);
+        } catch (e) { /* ignore */ }
+    }
 });
 
 function updateLikeTooltip(photoId, likedUsers, remainingCount) {

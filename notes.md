@@ -9,6 +9,7 @@ DONE: přepsat do skills
 - using R2 storage (přidat i do obsidianu, místo NAS)
 - using PC + wake on Lan + Termius -> hosting dashboard app na 0.0.0.0:X + tailscale = z mobilu se tam připojím.
 - přidat přidání hotové deploynuté appky na app_dashboard jako krok do deploymentu na app_dashboard :)
+- tagy u fotek na vyhledávání lidí
 
 Important info:
 Added. You now have a translation sync command:
@@ -42,3 +43,12 @@ a přidat pohár/medaile pro ty, co nedávno něco vyhráli !
 - bug: proklik na nákup výbavy se stackuje za URL
 
 - kde všude notifikační blikání? nový požadavek platby, Novinka, Kalendář?
+
+- soupis turnajů - na jakých stránkách je co, co je žebříček, UŠL, padavky a sokolí péro, veteráni, akademičky, Fencing time live
+
+-  Ostatní akce = soustředění, workshop, Sportovní den, úklid kanclu, ... teoreticky vše, co je oficiální, pro všechny.
+
+- od Oty sehnat Videa na yt, od Vince grafiku
+
+-> přesun do Tournamnet app - až dodělám možnost z fotky předvyplnit pools, tak budu moci poměrně snadno přenést historické turnaje do hotových.
+jinak hotové turnaje chci nahrávat i jinak, z histoirických dat a mých statistik = 4. app (tato humanitní, tournamenty - organizační, souboje = mini app, a pak statistiky globál)

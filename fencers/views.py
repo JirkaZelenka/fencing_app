@@ -19,6 +19,7 @@ from django.forms import modelformset_factory
 from django.core.files.storage import default_storage
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
+from django.utils.http import url_has_allowed_host_and_scheme
 MAX_PROFILE_PHOTO_BYTES = 2 * 1024 * 1024  # 2 MB
 PROFILE_PHOTO_ALLOWED_CONTENT_TYPES = frozenset({
     "image/jpeg",
@@ -260,6 +261,69 @@ def serialize_event(event, reaction=None):
         'user_reaction': reaction,
         'has_time': False,
     }
+
+
+def _parse_photo_tags_post(raw: str):
+    """Split user input by comma/semicolon/newline into trimmed, de-duplicated tags."""
+    if not raw:
+        return []
+    out = []
+    seen = set()
+    for chunk in re.split(r"[,;\n]", raw):
+        s = chunk.strip()
+        if not s:
+            continue
+        key = s.casefold()
+        if key not in seen:
+            seen.add(key)
+            out.append(s)
+    return out
+
+
+def _distinct_tags_from_event_photos():
+    """All unique non-empty tag strings currently stored on photos."""
+    seen = set()
+    out = []
+    for tags in EventPhoto.objects.values_list("tags", flat=True).iterator(chunk_size=500):
+        if not tags:
+            continue
+        for item in tags:
+            if not isinstance(item, str):
+                continue
+            s = item.strip()
+            if not s:
+                continue
+            k = s.casefold()
+            if k not in seen:
+                seen.add(k)
+                out.append(s)
+    return out
+
+
+def _photo_tag_options_for_find():
+    """Labels that already exist on at least one photo (for find-person multiselect)."""
+    return sorted(_distinct_tags_from_event_photos(), key=str.casefold)
+
+
+def _photo_tag_datalist_values():
+    """Short fencer labels (Jméno P.) plus every tag already used on at least one photo."""
+    seen = set()
+    values = []
+    for fp in FencerProfile.objects.order_by("last_name", "first_name").only(
+        "first_name", "last_name", "id"
+    ):
+        short = fp.short_name_tag
+        if short:
+            k = short.casefold()
+            if k not in seen:
+                seen.add(k)
+                values.append(short)
+    for s in _distinct_tags_from_event_photos():
+        k = s.casefold()
+        if k not in seen:
+            seen.add(k)
+            values.append(s)
+    return sorted(values, key=str.casefold)
 
 
 def login_view(request):
@@ -941,6 +1005,10 @@ def album_detail(request, album_id):
         'all_photos': all_photos,
         'user_liked_photo_ids': user_liked_photo_ids,
         'r2_enabled': r2_ready(),
+        'fencer_tag_options': _photo_tag_datalist_values(),
+        'person_search_active': False,
+        'person_search_selected_tags': [],
+        'person_find_tag_options': [],
     }
     return render(request, 'fencers/album_detail.html', context)
 
@@ -998,6 +1066,7 @@ def upload_photo_r2(request, subalbum_id):
 
     title_base = request.POST.get('title', '').strip()
     description = request.POST.get('description', '').strip()
+    tags = _parse_photo_tags_post(request.POST.get('tags', ''))
     uploaded_count = 0
     for photo_file in photo_files:
         content_type = (getattr(photo_file, 'content_type', '') or '').strip().lower()
@@ -1025,6 +1094,7 @@ def upload_photo_r2(request, subalbum_id):
                 event_date=subalbum.album.event.date,
                 uploaded_by=profile,
                 subalbum=subalbum,
+                tags=tags,
             )
             uploaded_count += 1
         except Exception:
@@ -1754,9 +1824,7 @@ def toggle_photo_like(request, photo_id):
     liked_users = []
     for like_obj in recent_likes:
         if like_obj.fencer:
-            # Use fencer profile name
-            name = like_obj.fencer.get_full_name() or (like_obj.fencer.user.username if like_obj.fencer.user else f"Profil #{like_obj.fencer.id}")
-            liked_users.append(name)
+            liked_users.append(like_obj.fencer.display_name)
     remaining_likes = max(like_count - len(liked_users), 0)
     
     return JsonResponse({
@@ -1793,6 +1861,10 @@ def my_favorite_photos(request):
         'user_liked_photo_ids': user_liked_photo_ids,
         'is_special_album': True,
         'album_title': 'Moje oblíbené',
+        'fencer_tag_options': _photo_tag_datalist_values(),
+        'person_search_active': False,
+        'person_search_selected_tags': [],
+        'person_find_tag_options': [],
     }
     return render(request, 'fencers/album_detail.html', context)
 
@@ -1825,8 +1897,83 @@ def most_liked_photos(request):
         'user_liked_photo_ids': user_liked_photo_ids,
         'is_special_album': True,
         'album_title': 'Nejoblíbenější fotky',
+        'fencer_tag_options': _photo_tag_datalist_values(),
+        'person_search_active': False,
+        'person_search_selected_tags': [],
+        'person_find_tag_options': [],
     }
     return render(request, 'fencers/album_detail.html', context)
+
+
+@login_required
+def find_person_photos(request):
+    """Photos that match any of the selected tag strings (OR)."""
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        return redirect("match_profile")
+
+    tag_terms = [t.strip() for t in request.GET.getlist("tags") if t.strip()]
+    all_photos = EventPhoto.objects.none()
+    if tag_terms:
+        q_combined = Q()
+        for t in tag_terms:
+            q_combined |= Q(tags_search__icontains=t.casefold())
+        all_photos = (
+            EventPhoto.objects.filter(q_combined)
+            .distinct()
+            .select_related(
+                "subalbum",
+                "subalbum__album",
+                "subalbum__album__event",
+                "uploaded_by",
+            )
+            .prefetch_related("likes", "likes__fencer", "likes__fencer__user")
+            .order_by("-uploaded_at")
+        )
+
+    user_liked_photo_ids = set()
+    if all_photos:
+        user_liked_photo_ids = set(
+            PhotoLike.objects.filter(fencer=profile, photo__in=all_photos).values_list(
+                "photo_id", flat=True
+            )
+        )
+
+    context = {
+        "all_photos": all_photos,
+        "user_liked_photo_ids": user_liked_photo_ids,
+        "is_special_album": True,
+        "album_title": "Najít podle jména",
+        "person_search_active": True,
+        "person_search_selected_tags": tag_terms,
+        "person_find_tag_options": _photo_tag_options_for_find(),
+        "fencer_tag_options": _photo_tag_datalist_values(),
+        "r2_enabled": r2_ready(),
+    }
+    return render(request, "fencers/album_detail.html", context)
+
+
+@login_required
+@require_POST
+def update_photo_tags(request, photo_id):
+    profile = getattr(request.user, "fencer_profile", None)
+    if not profile:
+        messages.info(request, "Nejprve se prosím přiřaďte k profilu.")
+        return redirect("match_profile")
+
+    photo = get_object_or_404(EventPhoto, id=photo_id)
+    photo.tags = _parse_photo_tags_post(request.POST.get("tags", ""))
+    photo.save()
+    messages.success(request, "Štítky byly uloženy.")
+
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect("event_photos")
 
 
 @login_required

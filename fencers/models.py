@@ -1,3 +1,5 @@
+import json
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -144,6 +146,20 @@ class FencerProfile(models.Model):
     @property
     def display_name(self):
         return self.get_full_name() or f"Profil #{self.id}"
+
+    @property
+    def short_name_tag(self) -> str:
+        """Short label for photo tags, e.g. 'Jan N.' (first name + last initial)."""
+        fn = (self.first_name or "").strip()
+        ln = (self.last_name or "").strip()
+        if not fn and not ln:
+            return ""
+        if ln:
+            initial = (ln[0].upper() + ".") if ln else ""
+            if fn:
+                return f"{fn} {initial}".strip()
+            return initial
+        return fn
 
     @property
     def ordered_badges(self):
@@ -331,6 +347,10 @@ class SubAlbum(models.Model):
         return f"{self.name} ({self.album.event.title})"
 
 
+def _empty_tag_list():
+    return []
+
+
 class EventPhoto(models.Model):
     title = models.CharField(max_length=200, verbose_name="Název")
     description = models.TextField(blank=True, verbose_name="Popis")
@@ -351,7 +371,19 @@ class EventPhoto(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_featured = models.BooleanField(default=False, verbose_name="Doporučená")
     subalbum = models.ForeignKey(SubAlbum, on_delete=models.CASCADE, related_name='photos', null=True, blank=True, verbose_name="Subalbum")
-    
+    tags = models.JSONField(
+        default=_empty_tag_list,
+        blank=True,
+        verbose_name="Štítky",
+        help_text="Libovolné krátké texty (např. jména na fotce); pro vyhledávání.",
+    )
+    tags_search = models.TextField(
+        blank=True,
+        default="",
+        editable=False,
+        verbose_name="Štítky (vyhledávání)",
+    )
+
     class Meta:
         verbose_name = "Fotka z akce"
         verbose_name_plural = "Fotky z akcí"
@@ -361,6 +393,33 @@ class EventPhoto(models.Model):
         super().clean()
         if not self.photo and not (self.remote_image_url or '').strip():
             raise ValidationError('Je potřeba mít buď nahraný soubor, nebo URL obrázku.')
+
+    def save(self, *args, **kwargs):
+        raw = self.tags
+        if raw is None:
+            raw = []
+        normalized = []
+        seen = set()
+        for item in raw:
+            if not isinstance(item, str):
+                continue
+            s = item.strip()
+            if not s:
+                continue
+            key = s.casefold()
+            if key not in seen:
+                seen.add(key)
+                normalized.append(s)
+        self.tags = normalized
+        if normalized:
+            self.tags_search = " " + " ".join(t.casefold() for t in normalized) + " "
+        else:
+            self.tags_search = ""
+        super().save(*args, **kwargs)
+
+    @property
+    def tags_json(self):
+        return json.dumps(self.tags or [])
 
     @property
     def display_image_url(self):
